@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from models import CodeRequest
-from test import CodeLanguageDetector
+from languageDetector import CodeLanguageDetector
 
 UPLOAD_DIR = Path("../Upload-Files")
 
