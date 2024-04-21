@@ -1,14 +1,21 @@
 import uvicorn
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from models import CodeRequest
 from languageDetector import CodeLanguageDetector
+import textwrap
+from generateResponse import TestLLM
+import logging
 
 UPLOAD_DIR = Path("../Upload-Files")
+CHUNK_SIZE = 20000  # Adjust based on transcript length and model limits
+FILE_CONTENT = ""
 
 app = FastAPI()
+
+logging.basicConfig(level=logging.INFO)
 
 # CORS middleware configuration
 app.add_middleware(
@@ -46,10 +53,12 @@ def get_files(directory: str = "../Upload-Files"):
 
 @app.get("/files/{file_name}")
 def get_file_content(file_name: str):
+    global FILE_CONTENT
     file_path = UPLOAD_DIR / file_name
     try:
         with open(file_path, 'r') as file:
             content = file.read()
+            FILE_CONTENT = content
         return content
     except FileNotFoundError:
         return {"error": "File not found"}
@@ -61,21 +70,44 @@ async def detect_language(code_request: CodeRequest.CodeRequest):
     if code_request.language.lower() in supported_languages:
         is_language = CodeLanguageDetector.detect_language(code_request.code, code_request.language)
         if is_language:
-            return {"message": "Code is in the specified language"}
+            return 1 #{"message": "Code is in the specified language"}
         else:
-            return {"message": "Code language does not match the selected language"}
+            return 2 #{"message": "Code language does not match the selected language"}
     else:
-        return {"error": "Unsupported language"}
+        return 3 #{"error": "Unsupported language"}
 
 
-# @app.post("/detect-language/")
-# async def detect_language(language: str, code: str ):
-#     supported_languages = ["python", "javascript", "java", "csharp", "cpp", "php", "ruby", "swift", "go", "typescript", "html", "c"]
-#     if language in supported_languages:
-#         is_language = CodeLanguageDetector.detect_language(code, language)
-#         if is_language:
-#             return {"message": "Code is in the specified language"}
-#         else:
-#             return {"message": "Code language does not match the selected language"}
-#     else:
-#         return {"error": "Unsupported language"}
+@app.get("/get_code")
+def get_code():
+    print(FILE_CONTENT)
+    try:
+        file_content = FILE_CONTENT
+
+        if not file_content:
+            raise HTTPException(status_code=400, detail="File content is empty or file not found")
+
+        chunks = textwrap.wrap(file_content, width=CHUNK_SIZE)
+        input_chunks = chunks
+
+        result = TestLLM.testLLM(input_chunks)
+
+        if not result:
+            raise HTTPException(status_code=500, detail="LLM test failed or returned empty result")
+
+        return result
+
+    except HTTPException as http_err:
+        logging.error(f"HTTP error occurred: {http_err}")
+        raise http_err
+
+    except Exception as e:
+        logging.error(f"Error in get_code: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+
+
+
+
+
+

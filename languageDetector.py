@@ -2,9 +2,7 @@ import ast
 import jsbeautifier
 import javalang
 
-
 class CodeLanguageDetector:
-
     @staticmethod
     def __is_python_code(code):
         try:
