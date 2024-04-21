@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, UploadFile, HTTPException, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
@@ -7,9 +7,13 @@ from models import CodeRequest
 from languageDetector import CodeLanguageDetector
 import textwrap
 from generateResponse import TestLLM
+
 import logging
+from models.Data import CodeContextData
+
 
 UPLOAD_DIR = Path("../Upload-Files")
+
 CHUNK_SIZE = 20000  # Adjust based on transcript length and model limits
 FILE_CONTENT = ""
 
@@ -77,14 +81,13 @@ async def detect_language(code_request: CodeRequest.CodeRequest):
         return 3 #{"error": "Unsupported language"}
 
 
-@app.get("/get_code")
-def get_code():
-    print(FILE_CONTENT)
+@app.post("/get_code")
+def get_code(codeContext: CodeContextData):  # Receive codeContext from the request body
     try:
-        file_content = FILE_CONTENT
+        file_content = codeContext.data  # Extracting data attribute
 
         if not file_content:
-            raise HTTPException(status_code=400, detail="File content is empty or file not found")
+            raise HTTPException(status_code=400, detail="File content is empty or not provided")
 
         chunks = textwrap.wrap(file_content, width=CHUNK_SIZE)
         input_chunks = chunks
@@ -103,6 +106,8 @@ def get_code():
     except Exception as e:
         logging.error(f"Error in get_code: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
 
 
 

@@ -1,9 +1,7 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-#from Read_file import input_chunks
 from langchain.schema.output_parser import StrOutputParser
 from langchain.prompts import PromptTemplate
 import os
-
 
 class TestLLM:
     def testLLM(input_chunks):
