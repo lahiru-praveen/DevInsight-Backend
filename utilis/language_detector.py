@@ -2,6 +2,7 @@ import ast
 import jsbeautifier
 import javalang
 
+
 class CodeLanguageDetector:
     @staticmethod
     def __is_python_code(code):
@@ -166,4 +167,3 @@ class CodeLanguageDetector:
             case "typescript":
                 result = CodeLanguageDetector.__is_typescript_code(code)
                 return result
-

@@ -1,12 +1,12 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-#from Read_file import input_chunks
 from langchain.schema.output_parser import StrOutputParser
 from langchain.prompts import PromptTemplate
+
 import os
 
 
 class TestLLM:
-    def testLLM(input_chunks):
+    def test_llm(input_chunks):
         # Set the Google API key
         os.environ['GOOGLE_API_KEY'] = "AIzaSyADYGqAkCJbjwn6Fsnbk5rQHISyRTuFDIE"
 
@@ -57,3 +57,7 @@ class TestLLM:
 
         # Print the final output
         return comp
+
+# Sample usage
+# input_chunks = ["def add(a, b):\n    return a + b", "def subtract(a, b):\n    return a - b"]
+# print(TestLLM.test_llm(input_chunks))
