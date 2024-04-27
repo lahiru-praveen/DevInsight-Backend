@@ -1,12 +1,13 @@
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from database.test import db_router
 from models import code_request
 from routes.file_handling import file_router
 from utilis.language_detector import CodeLanguageDetector
 import textwrap
 from utilis.generate_response import TestLLM
 import logging
-from models.code_context_data import CodeContextData
+from models import code_context_data
 
 CHUNK_SIZE = 20000  # Adjust based on transcript length and model limits
 FILE_CONTENT = ""
@@ -25,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(file_router)
+app.include_router(db_router)
 
 
 @app.post("/detect-language/")
@@ -42,9 +44,9 @@ async def detect_language(code_req: code_request.CodeRequest):
 
 
 @app.post("/get_code")
-def get_code(code_context: CodeContextData):  # Receive codeContext from the request body
+def get_code(code_context: code_context_data.CodeContextData):  # Receive codeContext from the request body
     try:
-        file_content = code_context.data  # Extracting data attribute
+        file_content = code_context.code  # Extracting data attribute from instance
 
         if not file_content:
             raise HTTPException(status_code=400, detail="File content is empty or not provided")
@@ -52,10 +54,12 @@ def get_code(code_context: CodeContextData):  # Receive codeContext from the req
         chunks = textwrap.wrap(file_content, width=CHUNK_SIZE)
         input_chunks = chunks
 
-        result = TestLLM.test_llm(input_chunks)
+        result = TestLLM.test_llm(input_chunks,code_context.language,code_context.description)
 
         if not result:
             raise HTTPException(status_code=500, detail="LLM test failed or returned empty result")
+
+        print(code_context.language,code_context.description)
 
         return result
 

@@ -2,4 +2,6 @@ from pydantic import BaseModel
 
 
 class CodeContextData(BaseModel):
-    data: str
+    code: str
+    language: str
+    description: str
