@@ -33,12 +33,11 @@ def get_files(directory: str = "../Upload-Files"):
 
 @file_router.get("/files/{file_name}")
 def get_file_content(file_name: str):
-    global FILE_CONTENT
+
     file_path = UPLOAD_DIR / file_name
     try:
         with open(file_path, 'r') as file:
             content = file.read()
-            FILE_CONTENT = content
         return content
     except FileNotFoundError:
         return {"error": "File not found"}
