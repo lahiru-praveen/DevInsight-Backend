@@ -1,19 +1,21 @@
-import uvicorn
-from fastapi import FastAPI, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+# import tempfile
+# from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-from models import CodeRequest
-from languageDetector import CodeLanguageDetector
+from database.db import DatabaseConnector
+from models import code_request, action_result, code_context_data
+from routes.file_handling import file_router
+from utilis.language_detector import CodeLanguageDetector
 import textwrap
-from generateResponse import TestLLM
+from utilis.generate_response import CodeReviewLLM
 import logging
+# from weasyprint import HTML
 
-UPLOAD_DIR = Path("../Upload-Files")
 CHUNK_SIZE = 20000  # Adjust based on transcript length and model limits
-FILE_CONTENT = ""
 
 app = FastAPI()
+
+db1 = DatabaseConnector("code")
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,74 +28,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.post("/uploadfile/")
-async def create_upload_files(file_uploads: list[UploadFile]):
-    saved_files = []
-    for file_upload in file_uploads:
-        try:
-            data = await file_upload.read()
-            save_to = UPLOAD_DIR / file_upload.filename
-            with open(save_to, "wb") as f:
-                f.write(data)
-            saved_files.append(file_upload.filename)
-        except IOError as e:
-            return JSONResponse(status_code=500, content={"error": f"Failed to save file: {e}"})
-    return {"filenames": saved_files}
-
-
-@app.get("/files")
-def get_files(directory: str = "../Upload-Files"):
-    directory_path = Path(directory)
-    files = [{"name": file.name, "size": file.stat().st_size} for file in directory_path.iterdir() if file.is_file()]
-    formatted_files = [{"name": file["name"], "size": f"{file['size'] / 1024:.2f} KB"} for file in files]
-    print("Files:", formatted_files)
-    return formatted_files
-
-
-@app.get("/files/{file_name}")
-def get_file_content(file_name: str):
-    global FILE_CONTENT
-    file_path = UPLOAD_DIR / file_name
-    try:
-        with open(file_path, 'r') as file:
-            content = file.read()
-            FILE_CONTENT = content
-        return content
-    except FileNotFoundError:
-        return {"error": "File not found"}
+app.include_router(file_router)
+# app.include_router(db_router)
 
 
 @app.post("/detect-language/")
-async def detect_language(code_request: CodeRequest.CodeRequest):
-    supported_languages = ["python", "javascript", "java", "csharp", "cpp", "php", "ruby", "swift", "go", "typescript", "html", "c"] 
-    if code_request.language.lower() in supported_languages:
-        is_language = CodeLanguageDetector.detect_language(code_request.code, code_request.language)
+async def detect_language(code_req: code_request.CodeRequest):
+    supported_languages = ["python", "javascript", "java", "csharp", "cpp", "php", "ruby", "swift", "go", "typescript",
+                           "html", "c"]
+    if code_req.language.lower() in supported_languages:
+        is_language = CodeLanguageDetector.detect_language(code_req.code, code_req.language)
         if is_language:
-            return 1 #{"message": "Code is in the specified language"}
+            return 1  # {"message": "Code is in the specified language"}
         else:
-            return 2 #{"message": "Code language does not match the selected language"}
+            return 2  # {"message": "Code language does not match the selected language"}
     else:
-        return 3 #{"error": "Unsupported language"}
+        return 3  # {"error": "Unsupported language"}
 
 
-@app.get("/get_code")
-def get_code():
-    print(FILE_CONTENT)
+# @app.post("/generate-pdf")
+# async def generate_pdf(review_content: str):
+#     try:
+#         html_content = f"<html><body>{review_content}</body></html>"
+#         pdf_file = tempfile.NamedTemporaryFile(delete=False)
+#         HTML(string=html_content).write_pdf(pdf_file.name)
+#         return FileResponse(pdf_file.name, media_type='application/pdf')
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+# @app.post("/get_code", response_model=action_result.ActionResult)
+
+@app.post("/get_code")
+async def get_code(code_context: code_context_data.CodeContextData):  # Receive codeContext from the request body
     try:
-        file_content = FILE_CONTENT
+        print(code_context.code)
+        print(code_context.language)
+        print(code_context.description)
+        action_result1 = await db1.add_code(code_context)  # Await the asynchronous call
+        print(action_result1)
+
+        file_content = code_context.code  # Extracting data attribute from instance
 
         if not file_content:
-            raise HTTPException(status_code=400, detail="File content is empty or file not found")
+            raise HTTPException(status_code=400, detail="File content is empty or not provided")
 
         chunks = textwrap.wrap(file_content, width=CHUNK_SIZE)
         input_chunks = chunks
 
-        result = TestLLM.testLLM(input_chunks)
+        result = CodeReviewLLM.test_llm(input_chunks,code_context.language,code_context.description)
 
         if not result:
             raise HTTPException(status_code=500, detail="LLM test failed or returned empty result")
 
+        print(result)
         return result
 
     except HTTPException as http_err:
@@ -103,11 +90,3 @@ def get_code():
     except Exception as e:
         logging.error(f"Error in get_code: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
-
-
-
-
-
-
-
