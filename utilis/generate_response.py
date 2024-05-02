@@ -39,8 +39,8 @@ class CodeReviewLLM:
             previous_answer = ""
 
             # Define the chunking process
-            def create_cohesive_prompt(current_chunk, main_language, project_nature):
-                prompt = f"This is a code written by a programmer in the language of {main_language}, it is for a project on {project_nature}. Use this code {current_chunk} and review this code. Give strengths and weaknesses and potential modifications,Be precise and concise"
+            def create_cohesive_prompt(current_chunk, lan, des):
+                prompt = f"This is a code written by a programmer in the language of {lan}, it is for a project on {des}. Use this code {current_chunk} and review this code. Give strengths and weaknesses and potential modifications,Be precise and concise"
                 return prompt
 
             # Initialize the compilation
@@ -50,11 +50,7 @@ class CodeReviewLLM:
             for chunk in chunk_input:
                 project_nature = description1
                 cohesive_prompt = create_cohesive_prompt(chunk, main_language, project_nature)
-                # try:
                 r = chain1.invoke({"con": cohesive_prompt})
-                # except (ChatGoogleGenerativeAIError, HTTPException) as e:
-                #     logging.error(f"Error in generating review content: {e}")
-                #     raise HTTPException(status_code=500, detail="Internal Server Error")
                 comp = comp + r
                 previous_answer = r
 
