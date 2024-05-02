@@ -7,7 +7,7 @@ UPLOAD_DIR = Path("../Upload-Files")
 file_router = APIRouter()
 
 
-@file_router.post("/uploadfile/")
+@file_router.post("/upload-file/")
 async def create_upload_files(file_uploads: list[UploadFile]):
     saved_files = []
     for file_upload in file_uploads:
