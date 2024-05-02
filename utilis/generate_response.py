@@ -8,6 +8,8 @@ import os
 from config import config
 
 class CodeReviewLLM:
+
+    @staticmethod
     def test_llm(chunk_input, language1, description1):
         try:
             # Set the Google API key
@@ -20,8 +22,8 @@ class CodeReviewLLM:
 
             # Define the prompt templates
             prompt1 = PromptTemplate(
-                input_variables=['con', 'language'],
-                template="This is a code written by a programmer {con}, This is written using {language}, and I need you to review this code. Give strengths and weaknesses and potential modifications,Be precise and concise "
+                input_variables=['con'],
+                template="This is a code written by a programmer {con}, and I need you to review this code. Give strengths and weaknesses and potential modifications,Be precise and concise "
             )
 
             # Initialize the output parser
@@ -49,7 +51,7 @@ class CodeReviewLLM:
                 project_nature = description1
                 cohesive_prompt = create_cohesive_prompt(chunk, main_language, project_nature)
                 # try:
-                r = chain1.invoke({"con": cohesive_prompt, "language": "python"})
+                r = chain1.invoke({"con": cohesive_prompt})
                 # except (ChatGoogleGenerativeAIError, HTTPException) as e:
                 #     logging.error(f"Error in generating review content: {e}")
                 #     raise HTTPException(status_code=500, detail="Internal Server Error")
