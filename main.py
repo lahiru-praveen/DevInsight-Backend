@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.file_handling import file_router
 from routes.interact_llm import llm_router
 from routes.language_checker import lan_check_router
-
+from routes.submissions import submission_router
 
 app = FastAPI()
 
@@ -22,6 +22,8 @@ app.include_router(file_router)
 app.include_router(llm_router)
 
 app.include_router(lan_check_router)
+
+app.include_router(submission_router)
 
 
 
