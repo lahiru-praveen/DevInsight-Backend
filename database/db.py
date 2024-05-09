@@ -6,7 +6,9 @@ import motor.motor_asyncio
 from config import config
 from config.const_msg import TextMessages
 from models.action_result import ActionResult
+from passlib.context import CryptContext
 from models.code_context_data import CodeContextData
+from models.company_data import Create_CompanyModel, CompanyModel
 
 
 class DatabaseConnector:
@@ -62,11 +64,30 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
-        
-    async def create_company(self, entity: BaseModel) -> ActionResult:
+
+    async def create_company(self, entity: Create_CompanyModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-            result = await self.__collection.insert_one(entity.model_dump(by_alias=True, exclude=["id"]))
+            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+            hashed_password = pwd_context.hash(entity.password)
+            entity1 = CompanyModel()
+
+            # Create a new BaseModel object without the password field
+            entity1 = BaseModel(
+                company_name=entity.company_name,
+                company_uname=entity.company_uname,
+                company_email=entity.company_email,
+                backup_email=entity.backup_email,
+                manager_email=entity.manager_email,
+                first_name=entity.first_name,
+                last_name=entity.last_name,
+                hash_password=hashed_password,
+                projectDetails=entity.projectDetails
+            )
+
+            # Insert the document into the collection
+            result = await self.__collection.insert_one(entity1.dict())
+
             action_result.data = result.inserted_id
             action_result.message = TextMessages.INSERT_SUCCESS
         except Exception as e:
@@ -74,4 +95,5 @@ class DatabaseConnector:
             print(e)
             action_result.message = TextMessages.ACTION_FAILED
         finally:
-            return action_result    
+            return action_result
+

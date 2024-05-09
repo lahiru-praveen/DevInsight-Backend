@@ -1,27 +1,36 @@
 from fastapi import APIRouter, HTTPException
-from pathlib import Path
-from utilis.company_data import invites,Staff
+from database.db import DatabaseConnector
 from models.company_data import Create_CompanyModel,CompanyModel
 from models.invites import Invite
 
-UPLOAD_DIR = Path("../Upload-Files")
+db_company = DatabaseConnector("company")
 
 company_main_router = APIRouter()
 
-@company_main_router.post("/create-company", response_model = CompanyModel)
+
+invites = [
+    {"id": 1, "email": "buwanekagame@gmail.com", "role": "Quality assurance", "device": "Date"},
+    {"id": 2, "email": "example2@example.com", "role": "Developer", "device": "Date"},
+    {"id": 3, "email": "example3@example.com", "role": "Developer", "device": "Date"},
+    {"id": 4, "email": "example4@example.com", "role": "Quality assurance", "device": "Date"}
+]
+
+# Sample hardcoded data for invite table
+Staff = [
+    {"id": 1, "email": "buwanekamara@gmail.com", "name": "Buwaneka_Marasinghe", "role": "Quality assuranc"},
+    {"id": 2, "email": "buwanekagame@gmail.com", "name": "Lahiru Praveen", "role": "Quality assuranc"},
+    {"id": 3, "email": "chamoda@example.com", "name": "Chamoda_herath", "role": "Develope"},
+    {"id": 4, "email": "ramajini@example.com", "name": "Ramajini_Ganasithan", "role": "Quality assurance"},
+    {"id": 5, "email": "buwaneka@example.com", "name": "Buwaneka_Marasinghe", "role": "Develope"},
+    {"id": 6, "email": "lahiru@example.com", "name": "Lahiru Praveen", "role": "Quality assurance"},
+    {"id": 7, "email": "chamoda@example.com", "name": "Chamoda_herath", "role": "Develope"},
+    {"id": 8, "email": "ramajini@example.com", "name": "Ramajini_Ganasithan", "role": "Develope"}
+]
+
+@company_main_router.post("/create-company", response_model=CompanyModel)
 async def post_company(record: Create_CompanyModel):
-    response = await create_company(record.company_name,
-                                    record.company_uname,
-                                    record.company_email,
-                                    record.backup_email,
-                                    record.manager_email,
-                                    record.first_name,
-                                    record.last_name,
-                                    record.password,
-                                    record.projectDetails)    
-    if response:
-        return response
-    raise HTTPException(400,"something went wrong")
+    action_result1 = await db_company.create_company(record,CompanyModel)  # Pass the Pydantic model instance
+    print(action_result1)
 
 @company_main_router.get("/invite-table")
 async def get_invite_table():
@@ -62,37 +71,3 @@ async def get_dummy_data():
 
 
 
-
-
-
-import motor.motor_asyncio
-from passlib.context import CryptContext
-from model import CompanyModel
-client = motor.motor_asyncio.AsyncIOMotorClient(
-    'mongodb+srv://buwanekamara:M16A2ak47@devinsight.u2ykqij.mongodb.net/'
-)
-
-database = client.devInsight_01
-compnayCollection = database.Company
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-# async def create_company(account):
-#     document = account
-#     result = await compnayCollection.insert_one(document)
-#     return document
-async def create_company(company_name: str,
-    company_uname: str,    
-    company_email: str,
-    backup_email: str,
-    manager_email: str,
-    first_name: str,
-    last_name: str,
-    password: str,
-    projectDetails:str):
-
-    hashed_password = pwd_context.hash(password)
-    document ={"company_name": company_name, "company_uname": company_uname, "company_email":company_email, "backup_email": backup_email, "manager_email": manager_email, "first_name": first_name, "last_name": last_name, "hashpassword": hashed_password, "projectDetails": projectDetails}
-    result = await compnayCollection.insert_one(document)
-    return CompanyModel(**document, id=str(result.inserted_id))
