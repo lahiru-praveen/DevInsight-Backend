@@ -62,3 +62,16 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
+        
+    async def create_company(self, entity: BaseModel) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            result = await self.__collection.insert_one(entity.model_dump(by_alias=True, exclude=["id"]))
+            action_result.data = result.inserted_id
+            action_result.message = TextMessages.INSERT_SUCCESS
+        except Exception as e:
+            action_result.status = False
+            print(e)
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result    
