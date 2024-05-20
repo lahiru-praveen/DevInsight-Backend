@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, UploadFile
 from pathlib import Path
 from fastapi.responses import JSONResponse
@@ -9,6 +10,10 @@ file_router = APIRouter()
 
 @file_router.post("/upload-file/")
 async def create_upload_files(file_uploads: list[UploadFile]):
+    # Delete all existing files before uploading new ones
+    for existing_file in UPLOAD_DIR.glob("*"):
+        os.remove(existing_file)
+
     saved_files = []
     for file_upload in file_uploads:
         try:
