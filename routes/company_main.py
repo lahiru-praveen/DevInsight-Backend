@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from database.db import DatabaseConnector
-from models.company_data import Create_CompanyModel,CompanyModel
+from models.company_data_1 import CreateCompanyModel
 from models.invites import Invite
 
 db_company = DatabaseConnector("company")
@@ -27,9 +27,9 @@ Staff = [
     {"id": 8, "email": "ramajini@example.com", "name": "Ramajini_Ganasithan", "role": "Develope"}
 ]
 
-@company_main_router.post("/create-company", response_model=CompanyModel)
-async def post_company(record: Create_CompanyModel):
-    action_result1 = await db_company.create_company(record,CompanyModel)  # Pass the Pydantic model instance
+@company_main_router.post("/create-company")
+async def post_company(record: CreateCompanyModel):
+    action_result1 = await db_company.create_company(record)  # Pass the Pydantic model instance
     print(action_result1)
 
 @company_main_router.get("/invite-table")

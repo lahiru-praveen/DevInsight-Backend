@@ -8,7 +8,8 @@ from config.const_msg import TextMessages
 from models.action_result import ActionResult
 from passlib.context import CryptContext
 from models.code_context_data import CodeContextData
-from models.company_data import Create_CompanyModel, CompanyModel
+from models.company_data_1 import CreateCompanyModel
+from models.company_data_2 import CompanyModel
 
 
 class DatabaseConnector:
@@ -65,15 +66,14 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def create_company(self, entity: Create_CompanyModel) -> ActionResult:
+    async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
             hashed_password = pwd_context.hash(entity.password)
-            entity1 = CompanyModel()
 
-            # Create a new BaseModel object without the password field
-            entity1 = BaseModel(
+            # Create an instance of CompanyModel without storing the plaintext password
+            company_entity = CompanyModel(
                 company_name=entity.company_name,
                 company_uname=entity.company_uname,
                 company_email=entity.company_email,
@@ -85,8 +85,11 @@ class DatabaseConnector:
                 projectDetails=entity.projectDetails
             )
 
-            # Insert the document into the collection
-            result = await self.__collection.insert_one(entity1.dict())
+            # Convert Pydantic model instance to a dictionary
+            company_dict = company_entity.dict()
+
+            # Insert the dictionary into the collection
+            result = await self.__collection.insert_one(company_dict)
 
             action_result.data = result.inserted_id
             action_result.message = TextMessages.INSERT_SUCCESS
@@ -96,4 +99,5 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
+
 
