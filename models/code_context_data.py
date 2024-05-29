@@ -17,10 +17,6 @@ class CodeContextData(BaseModel):
     code: str
     mode: int
 
-    # Validator to auto-generate project ID
-    # @validator("p_id", pre=True, always=True)
-    # def set_auto_project_id(cls, v, values):
-    #     cls._project_count += 1
-    #     return cls._project_count
+
 
 
