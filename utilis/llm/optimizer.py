@@ -2,7 +2,7 @@ from utilis.llm.chain import chain1,chain2,chain3
 from utilis.llm.prompts import create_cohesive_prompt
 
 
-class CodeReviewLLM1:
+class CodeReviewLLM:
     @staticmethod
     def get_review(chunk_input, language1, description1):
         # Set the main language
@@ -40,7 +40,7 @@ class CodeReviewLLM1:
 
         suggestions = suggest_final
 
-        refer_links_final = "These are the suggestions: \n"
+        refer_links_final = "These are the Reference Links: \n"
 
         for chunk in chunk_input:
             cohesive_prompt = create_cohesive_prompt(chunk, main_language, project_description)
