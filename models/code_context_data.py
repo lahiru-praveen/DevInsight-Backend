@@ -1,21 +1,21 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel, Field, BeforeValidator, validator
+from pydantic import BaseModel, Field, BeforeValidator
 from typing_extensions import Annotated
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class CodeContextData(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    p_id: str
-    p_name: str
-    f_name:str
+    p_id: int = Field(...)
+    p_name: str = Field(...)
+    f_name:str = Field(...)
     submission_date: str = str(date.today().strftime("%Y-%m-%d"))
-    language: str
-    description: str
-    code: str
-    mode: int
+    language: str = Field(...)
+    description: str = Field(...)
+    code: str = Field(...)
+    mode: object = Field(...)
 
 
 
