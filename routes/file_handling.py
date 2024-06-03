@@ -3,6 +3,7 @@ from fastapi import APIRouter, UploadFile
 from pathlib import Path
 from fastapi.responses import JSONResponse
 
+
 UPLOAD_DIR = Path("../Upload-Files")
 
 file_router = APIRouter()
@@ -25,6 +26,14 @@ async def create_upload_files(file_uploads: list[UploadFile]):
         except IOError as e:
             return JSONResponse(status_code=500, content={"error": f"Failed to save file: {e}"})
     return {"filenames": saved_files}
+
+
+@file_router.post("/upload-code/")
+async def create_upload_code():
+    # Delete all existing files before uploading new ones
+    for existing_file in UPLOAD_DIR.glob("*"):
+        os.remove(existing_file)
+    return "Delete all files"
 
 
 @file_router.get("/files")
