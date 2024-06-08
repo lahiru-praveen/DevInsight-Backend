@@ -74,15 +74,25 @@ class DatabaseConnector:
 
             # Create an instance of CompanyModel without storing the plaintext password
             company_entity = CompanyModel(
-                company_name=entity.company_name,
+                # company_name=entity.company_name,
+                # company_uname=entity.company_uname,
+                # company_email=entity.company_email,
+                # backup_email=entity.backup_email,
+                # manager_email=entity.manager_email,
+                # first_name=entity.first_name,
+                # last_name=entity.last_name,
+                # hash_password=hashed_password,
+                # # projectDetails=entity.projectDetails
+                 company_name=entity.company_name,
                 company_uname=entity.company_uname,
-                company_email=entity.company_email,
-                backup_email=entity.backup_email,
-                manager_email=entity.manager_email,
+                admin_email=entity.admin_email,
+                company_address=entity.company_address,
+                phone_number=entity.phone_number,
+                has_custom_domain=entity.has_custom_domain,
+                domain=entity.domain,
                 first_name=entity.first_name,
                 last_name=entity.last_name,
                 hash_password=hashed_password,
-                projectDetails=entity.projectDetails
             )
 
             # Convert Pydantic model instance to a dictionary
@@ -99,5 +109,20 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
+        
+    async def check_email(self, email: str) -> bool:
+        try:
+            result = await self.__collection.find_one({"admin_email": email})
+            return result is not None
+        except Exception as e:
+            print(e)
+            return False
 
-
+    # Add the check_username method
+    async def check_username(self, username: str) -> bool:
+        try:
+            result = await self.__collection.find_one({"company_uname": username})
+            return result is not None
+        except Exception as e:
+            print(e)
+            return False

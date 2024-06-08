@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from database.db import DatabaseConnector
+
+
 from models.company_data_1 import CreateCompanyModel
 from models.invites import Invite
 
@@ -26,6 +28,38 @@ Staff = [
     {"id": 7, "email": "chamoda@example.com", "name": "Chamoda_herath", "role": "Develope"},
     {"id": 8, "email": "ramajini@example.com", "name": "Ramajini_Ganasithan", "role": "Develope"}
 ]
+
+
+
+from fastapi import APIRouter, HTTPException, Query
+from database.db import DatabaseConnector
+from models.company_data_1 import CreateCompanyModel
+
+db_company = DatabaseConnector("company")
+
+company_main_router = APIRouter()
+
+# routes/company.py
+
+from fastapi import APIRouter, HTTPException
+
+router = APIRouter()
+
+
+@company_main_router.get("/check-company-email")
+async def check_company_email(email: str = Query(...)):
+    existing_email = await db_company.check_email(email)
+    if existing_email:
+        return {"exists": True}
+    return {"exists": False}
+
+@company_main_router.get("/check-company-username")
+async def check_company_username(username: str = Query(...)):
+    existing_username = await db_company.check_username(username)
+    if existing_username:
+        return {"exists": True}
+    return {"exists": False}
+
 
 @company_main_router.post("/create-company")
 async def post_company(record: CreateCompanyModel):
@@ -68,6 +102,3 @@ async def get_dummy_data():
         {"id": 2, "name": "Dummy 2"}
     ]
     return dummy_data
-
-
-
