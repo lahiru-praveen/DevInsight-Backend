@@ -119,12 +119,23 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    async def get_all_project_names(self) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            project_names = await self.__collection.distinct("p_name")
+            action_result.data = project_names
+            action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
     async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
             hashed_password = pwd_context.hash(entity.password)
-
             company_entity = CompanyModel(
                 company_name=entity.company_name,
                 company_uname=entity.company_uname,
@@ -134,13 +145,9 @@ class DatabaseConnector:
                 first_name=entity.first_name,
                 last_name=entity.last_name,
                 hash_password=hashed_password,
-                projectDetails=entity.projectDetails
-            )
-
+                projectDetails=entity.projectDetails)
             company_dict = company_entity.dict()
-
             result = await self.__collection.insert_one(company_dict)
-
             action_result.data = str(result.inserted_id)  # Convert ObjectId to string
             action_result.message = TextMessages.INSERT_SUCCESS
         except Exception as e:
@@ -233,5 +240,22 @@ class DatabaseConnector:
         except Exception as e:
             action_result.status = False
             action_result.message = str(e)
+        finally:
+            return action_result
+
+    async def get_request_by_id(self, entity_id: int) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            entity = await self.__collection.find_one({"p_id": entity_id})
+            if entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                json_data = json.loads(json_util.dumps(entity))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
