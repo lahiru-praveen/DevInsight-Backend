@@ -67,3 +67,16 @@ async def get_request_by_id(project_id: int):
         raise HTTPException(status_code=404, detail=result.message)
     req_id = result.data.get("req_id", None)
     return {"req_id": req_id}
+
+
+@submission_router.get("/project-names")
+async def get_all_project_names():
+    try:
+        result = await code_db.get_all_project_names()
+        if result.status:
+            return result.data  # Return the list of project names
+        else:
+            raise HTTPException(status_code=500, detail=result.message)
+    except Exception as e:
+        print(f"Error in get_all_project_names: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
