@@ -7,6 +7,7 @@ submission_router = APIRouter()
 
 code_db = DatabaseConnector("code")
 review_db = DatabaseConnector("review")
+request_db = DatabaseConnector("request")
 
 
 @submission_router.get("/pre-sub")
@@ -58,3 +59,11 @@ async def get_review(project_id: int):
         raise HTTPException(status_code=404, detail=result.message)
     print(result)
     return result.data
+
+@submission_router.get("/get-request-id/{project_id}")
+async def get_request_by_id(project_id: int):
+    result = await request_db.get_request_by_id(project_id)
+    if not result.status:
+        raise HTTPException(status_code=404, detail=result.message)
+    req_id = result.data.get("req_id", None)
+    return {"req_id": req_id}
