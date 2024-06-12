@@ -1,24 +1,29 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
+from bson import ObjectId
 
+class ObjectIdStr(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError('Invalid ObjectId')
+        return str(v)
 
 class CompanyModel(BaseModel):
-    # company_name: str
-    # company_uname: str
-    # company_email: str
-    # backup_email: str
-    # manager_email: str
-    # first_name: str
-    # last_name: str
-    # hash_password: str
-    # # projectDetails: str
-        company_name: str
-        company_uname: str
-        admin_email: str
-        company_address: str
-        phone_number: str
-        has_custom_domain: bool
-        domain: str
-        first_name: str
-        last_name: str
-        hash_password: str
-        
+    id: ObjectId = Field(default_factory=ObjectId, alias="_id")
+    company_name: str
+    
+    admin_email: EmailStr
+    company_address: str
+    phone_number: str
+    has_custom_domain: bool
+    domain: str
+    
+    hash_password: str
+    email_verified: bool = False
+            
+    class Config:
+        arbitrary_types_allowed = True
