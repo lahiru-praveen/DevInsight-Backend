@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Body
 from database.db import DatabaseConnector
 from models.company_data_1 import CreateCompanyModel
 from models.invites import Invite
+from models.company_data_2 import CompanyModel
+from models.updatecompany_data import UpdateCompanyModel
+from models.action_result import ActionResult
 
 db_company = DatabaseConnector("company")
 
@@ -85,3 +88,23 @@ async def get_dummy_data():
         {"id": 2, "name": "Dummy 2"}
     ]
     return dummy_data
+
+@company_main_router.get("/get-organization-data")
+async def get_organization_data(admin_email: str = Query(...)):
+    action_result = await db_company.get_company_by_admin_email(admin_email)
+    if not action_result.status:
+        raise HTTPException(status_code=404, detail=action_result.message)
+    data = {
+        "company_name": action_result.data.company_name,
+        "admin_email": action_result.data.admin_email,
+        "company_address": action_result.data.company_address,
+        "phone_number": action_result.data.phone_number,
+    }
+    return data
+
+@company_main_router.put("/update-company")
+async def update_company(admin_email: str, update_data: UpdateCompanyModel):
+    action_result = await db_company.update_company_by_email(admin_email, update_data)
+    if not action_result.status:
+        raise HTTPException(status_code=400, detail=action_result.message)
+    return action_result

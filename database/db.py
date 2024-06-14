@@ -10,10 +10,14 @@ from passlib.context import CryptContext
 from models.code_context_data import CodeContextData
 from models.company_data_1 import CreateCompanyModel
 from models.company_data_2 import CompanyModel
-import smtplib
-from email.mime.text import MIMEText
-import uuid
-import requests
+from models.updatecompany_data import UpdateCompanyModel
+
+
+class MemberModel(BaseModel):
+    email: str
+    first_name: str
+    last_name: str
+    role: str
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
@@ -114,28 +118,100 @@ class DatabaseConnector:
         except Exception as e:
             print(e)
             return False
-
-    # Add the check_username method
-    async def check_username(self, username: str) -> bool:
+        
+    async def get_company_by_admin_email(self, email: str) -> ActionResult:
+        action_result = ActionResult(status=True)
         try:
-            result = await self.__collection.find_one({"company_uname": username})
-            return result is not None
+            result = await self.__collection.find_one({"admin_email": email})
+            if result:
+                json_doc = json.loads(json_util.dumps(result))
+                action_result.data = CompanyModel(**json_doc)
+                action_result.message = "Company found"
+            else:
+                action_result.status = False
+                action_result.message = "Company not found"
         except Exception as e:
-            print(e)
-            return False
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+        finally:
+            return action_result   
+        
+    async def update_company_by_email(self, admin_email: str, update_data: UpdateCompanyModel) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            update_fields = {
+                "company_name": update_data.company_name,
+                "company_address": update_data.company_address,
+                "phone_number": update_data.phone_number
+            }
+            result = await self.__collection.update_one(
+                {"admin_email": admin_email},
+                {"$set": update_fields}
+            )
+            if result.modified_count == 1:
+                action_result.message = "Update successful"
+            else:
+                action_result.status = False
+                action_result.message = "Update failed or no changes made"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+        finally:
+            return action_result
+
+    async def get_members_by_organization_email(self, organization_email: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        
+        try:
+            query = {"organization_email": organization_email}
+            projection = {"first_name": 1, "last_name": 1, "email": 1, "role": 1}
+            cursor = self.__collection.find(query, projection)
+            
+            members = []
+            async for document in cursor:
+                json_doc = json.loads(json_util.dumps(document))
+                members.append(MemberModel(**json_doc))
+            action_result.data = members
+            action_result.message = "Members retrieved successfully"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+        finally:
+            return action_result    
+        
+    async def update_member_role(self, organization_email: str, email: str, new_role: str) -> ActionResult:
+        try:
+            query = {"organization_email": organization_email, "email": email}
+            result = await self.__collection.update_one(query, {"$set": {"role": new_role}})
+        
+            if result.modified_count == 1:
+                return ActionResult(status=True, message="Role updated successfully")
+            else:
+                return ActionResult(status=False, message="Role update failed or no changes made")
+            
+        except Exception as e:
+            return ActionResult(status=False, message=f"Error occurred: {str(e)}")
+    # Add the check_username method
+    # async def check_username(self, username: str) -> bool:
+    #     try:
+    #         result = await self.__collection.find_one({"company_uname": username})
+    #         return result is not None
+    #     except Exception as e:
+    #         print(e)
+    #         return False
         
 
-    def send_verification_email(self, email: str, token: str):
-        verification_link = f"http://127.0.0.1:8000/verify-email?token={token}"
-        msg = MIMEText(f"Please verify your email by clicking the following link: {verification_link}")
-        msg['Subject'] = 'Email Verification'
-        msg['From'] = 'no-reply@yourdomain.com'
-        msg['To'] = email
+    # def send_verification_email(self, email: str, token: str):
+    #     verification_link = f"http://127.0.0.1:8000/verify-email?token={token}"
+    #     msg = MIMEText(f"Please verify your email by clicking the following link: {verification_link}")
+    #     msg['Subject'] = 'Email Verification'
+    #     msg['From'] = 'no-reply@yourdomain.com'
+    #     msg['To'] = email
 
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.starttls()
-            server.login('devinsightlemon@gmail.com', 'pnml qaak jdsa xphz')
-            server.sendmail(msg['From'], [msg['To']], msg.as_string())
+    #     with smtplib.SMTP('smtp.gmail.com', 587) as server:
+    #         server.starttls()
+    #         server.login('devinsightlemon@gmail.com', 'pnml qaak jdsa xphz')
+    #         server.sendmail(msg['From'], [msg['To']], msg.as_string())
 
     # def send_verification_email(self, email: str, token: str):
     #     verification_link = f"http://127.0.0.1:8000/verify-email?token={token}"
@@ -153,21 +229,21 @@ class DatabaseConnector:
     #     )
 
 
-    async def get_company_by_token(self, token: str):
-        try:
-            result = await self.__collection.find_one({"verification_token": token})
-            return result
-        except Exception as e:
-            print(e)
-            return None
+    # async def get_company_by_token(self, token: str):
+    #     try:
+    #         result = await self.__collection.find_one({"verification_token": token})
+    #         return result
+    #     except Exception as e:
+    #         print(e)
+    #         return None
 
-    async def verify_company_email(self, company_id: str):
-        try:
-            result = await self.__collection.update_one(
-                {"_id": ObjectId(company_id)},
-                {"$set": {"email_verified": True, "verification_token": None, "token_expiration": None}}
-            )
-            return result.modified_count > 0
-        except Exception as e:
-            print(e)
-            return False
+    # async def verify_company_email(self, company_id: str):
+    #     try:
+    #         result = await self.__collection.update_one(
+    #             {"_id": ObjectId(company_id)},
+    #             {"$set": {"email_verified": True, "verification_token": None, "token_expiration": None}}
+    #         )
+    #         return result.modified_count > 0
+    #     except Exception as e:
+    #         print(e)
+    #         return False
