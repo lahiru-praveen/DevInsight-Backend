@@ -89,6 +89,20 @@ async def get_dummy_data():
     ]
     return dummy_data
 
+# @company_main_router.get("/get-organization-data")
+# async def get_organization_data(admin_email: str = Query(...)):
+#     action_result = await db_company.get_company_by_admin_email(admin_email)
+#     if not action_result.status:
+#         raise HTTPException(status_code=404, detail=action_result.message)
+#     data = {
+#         "company_name": action_result.data.company_name,
+#         "admin_email": action_result.data.admin_email,
+#         "company_address": action_result.data.company_address,
+#         "phone_number": action_result.data.phone_number,
+#     }
+#     return data
+#last change
+
 @company_main_router.get("/get-organization-data")
 async def get_organization_data(admin_email: str = Query(...)):
     action_result = await db_company.get_company_by_admin_email(admin_email)
@@ -99,6 +113,7 @@ async def get_organization_data(admin_email: str = Query(...)):
         "admin_email": action_result.data.admin_email,
         "company_address": action_result.data.company_address,
         "phone_number": action_result.data.phone_number,
+        "logo_url": action_result.data.logo_url  # Add this line
     }
     return data
 

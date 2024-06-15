@@ -15,4 +15,5 @@ class CompanyModel(BaseModel):
     
     hash_password: str
     email_verified: bool = False
+    logo_url: str
             

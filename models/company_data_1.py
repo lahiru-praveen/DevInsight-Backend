@@ -24,4 +24,6 @@ class CreateCompanyModel(BaseModel):
         domain: str
         
         password: str
+        logo_url:str
+        
         
