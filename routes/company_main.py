@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Depends, Body
+from fastapi import APIRouter, HTTPException, Query, Depends, Body,UploadFile, File, Form
 from database.db import DatabaseConnector
 from models.company_data_1 import CreateCompanyModel
 from models.invites import Invite
@@ -113,7 +113,7 @@ async def get_organization_data(admin_email: str = Query(...)):
         "admin_email": action_result.data.admin_email,
         "company_address": action_result.data.company_address,
         "phone_number": action_result.data.phone_number,
-        "logo_url": action_result.data.logo_url  # Add this line
+        "logo_url": action_result.data.logo_url  # Make sure logo_url is included
     }
     return data
 

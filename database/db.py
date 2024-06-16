@@ -134,7 +134,7 @@ class DatabaseConnector:
             action_result.status = False
             action_result.message = f"Error occurred: {str(e)}"
         finally:
-            return action_result   
+            return action_result 
         
     # async def update_company_by_email(self, admin_email: str, update_data: UpdateCompanyModel) -> ActionResult:
     #     action_result = ActionResult(status=True)
@@ -166,7 +166,7 @@ class DatabaseConnector:
                 "company_name": update_data.company_name,
                 "company_address": update_data.company_address,
                 "phone_number": update_data.phone_number,
-                "logo_url": update_data.logo_url  # Add this line
+                "logo_url": update_data.logo_url  # Ensure this line is included
             }
             result = await self.__collection.update_one(
                 {"admin_email": admin_email},
@@ -182,7 +182,6 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result
-    
 
     async def get_members_by_organization_email(self, organization_email: str) -> ActionResult:
         action_result = ActionResult(status=True)
