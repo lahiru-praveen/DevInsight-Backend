@@ -136,29 +136,6 @@ class DatabaseConnector:
         finally:
             return action_result 
         
-    # async def update_company_by_email(self, admin_email: str, update_data: UpdateCompanyModel) -> ActionResult:
-    #     action_result = ActionResult(status=True)
-    #     try:
-    #         update_fields = {
-    #             "company_name": update_data.company_name,
-    #             "company_address": update_data.company_address,
-    #             "phone_number": update_data.phone_number
-    #         }
-    #         result = await self.__collection.update_one(
-    #             {"admin_email": admin_email},
-    #             {"$set": update_fields}
-    #         )
-    #         if result.modified_count == 1:
-    #             action_result.message = "Update successful"
-    #         else:
-    #             action_result.status = False
-    #             action_result.message = "Update failed or no changes made"
-    #     except Exception as e:
-    #         action_result.status = False
-    #         action_result.message = f"Error occurred: {str(e)}"
-    #     finally:
-    #         return action_result
-    
     async def update_company_by_email(self, admin_email: str, update_data: UpdateCompanyModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
@@ -271,3 +248,28 @@ class DatabaseConnector:
     #     except Exception as e:
     #         print(e)
     #         return False
+    
+    
+    # async def update_company_by_email(self, admin_email: str, update_data: UpdateCompanyModel) -> ActionResult:
+    #     action_result = ActionResult(status=True)
+    #     try:
+    #         update_fields = {
+    #             "company_name": update_data.company_name,
+    #             "company_address": update_data.company_address,
+    #             "phone_number": update_data.phone_number
+    #         }
+    #         result = await self.__collection.update_one(
+    #             {"admin_email": admin_email},
+    #             {"$set": update_fields}
+    #         )
+    #         if result.modified_count == 1:
+    #             action_result.message = "Update successful"
+    #         else:
+    #             action_result.status = False
+    #             action_result.message = "Update failed or no changes made"
+    #     except Exception as e:
+    #         action_result.status = False
+    #         action_result.message = f"Error occurred: {str(e)}"
+    #     finally:
+    #         return action_result
+    
