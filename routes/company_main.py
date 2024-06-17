@@ -5,10 +5,16 @@ from models.invites import Invite
 from models.company_data_2 import CompanyModel
 from models.updatecompany_data import UpdateCompanyModel
 from models.action_result import ActionResult
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import binascii
+from config import config
+from pymongo.errors import ServerSelectionTimeoutError
+import motor.motor_asyncio
 
 db_company = DatabaseConnector("company")
 
 company_main_router = APIRouter()
+
 
 invites = [
     {"id": 1, "email": "buwanekagame@gmail.com", "role": "Quality assurance", "device": "Date"},
@@ -34,11 +40,9 @@ db_company = DatabaseConnector("company")
 company_main_router = APIRouter()
 
 @company_main_router.get("/check-company-email")
-async def check_company_email(email: str = Query(...)):
-    existing_email = await db_company.check_email(email)
-    if existing_email:
-        return {"exists": True}
-    return {"exists": False}
+async def check_company_email(email: str):
+    email_exists = await db_company.check_email_exists(email)
+    return {"exists": email_exists}
 
 @company_main_router.get("/check-company-username")
 async def check_company_username(username: str = Query(...)):
@@ -52,6 +56,23 @@ async def post_company(record: CreateCompanyModel):
     action_result1 = await db_company.create_company(record)  # Pass the Pydantic model instance
     print(action_result1)
 
+@company_main_router.get("/verify-email")
+async def verify_email(token: str):
+    try:
+        serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+        email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
+
+        # Update email verification status in the database
+        result = await db_company.update_email_verification(email)
+
+        if result.status:
+            return {"message": "Email verified successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=result.message)
+
+    except (SignatureExpired, BadSignature):
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
 @company_main_router.get("/invite-table")
 async def get_invite_table():
     return invites
@@ -100,7 +121,7 @@ async def get_organization_data(admin_email: str = Query(...)):
         "admin_email": action_result.data.admin_email,
         "company_address": action_result.data.company_address,
         "phone_number": action_result.data.phone_number,
-        "logo_url": action_result.data.logo_url  # Make sure logo_url is included
+        "logo_url": action_result.data.logo_url  
     }
     return data
 
@@ -110,6 +131,29 @@ async def update_company(admin_email: str, update_data: UpdateCompanyModel):
     if not action_result.status:
         raise HTTPException(status_code=400, detail=action_result.message)
     return action_result
+
+# before changes
+# @company_main_router.post("/create-company", response_model=ActionResult)
+# async def create_company(record: CreateCompanyModel):
+#     return await db_company.create_company(record)
+
+# @company_main_router.get("/verify-email", response_model=ActionResult)
+# async def verify_email(token: str):
+#     action_result = ActionResult(status=True)
+#     try:
+#         # Verify the token
+#         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)  # Replace with your secret key
+#         admin_email = serializer.loads(token, max_age=3600)  # Token expires in 1 hour (adjust as needed)
+
+#         # Update email_verified field in the database
+#         await db_company.verify_email(admin_email)
+        
+#         action_result.message = "Email verified successfully."
+#     except Exception as e:
+#         action_result.status = False
+#         action_result.message = f"Failed to verify email: {str(e)}"
+#     finally:
+#         return action_result
 
 # @company_main_router.get("/get-organization-data")
 # async def get_organization_data(admin_email: str = Query(...)):

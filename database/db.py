@@ -12,6 +12,12 @@ from models.company_data_1 import CreateCompanyModel
 from models.company_data_2 import CompanyModel
 from models.updatecompany_data import UpdateCompanyModel
 
+##new
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from itsdangerous import URLSafeTimedSerializer
+
 
 class MemberModel(BaseModel):
     email: str
@@ -73,36 +79,99 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    ## new 
     async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
+            serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+            verification_token = serializer.dumps(entity.admin_email, salt='email-confirm-salt')
+
             pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
             hashed_password = pwd_context.hash(entity.password)
 
             company_entity = CompanyModel(
                 company_name=entity.company_name,
-              
                 admin_email=entity.admin_email,
                 company_address=entity.company_address,
                 phone_number=entity.phone_number,
                 has_custom_domain=entity.has_custom_domain,
                 domain=entity.domain,
-               
                 hash_password=hashed_password,
-                email_verified=False
+                email_verified=False,
+                logo_url=entity.logo_url,
+                email_verification_token=verification_token
             )
 
             company_dict = company_entity.dict(by_alias=True)
             result = await self.__collection.insert_one(company_dict)
 
+            await self.send_verification_email(entity.admin_email, verification_token)
+
             action_result.data = result.inserted_id
-            action_result.message = "Insert successful"
+            action_result.message = "Company created successfully. Please verify your email."
         except Exception as e:
             action_result.status = False
-            action_result.message = "Action failed"
+            action_result.message = "Failed to create company."
+            print(e)
         finally:
             return action_result
-        
+
+    async def send_verification_email(self, email: str, verification_token: str):
+        smtp_server = 'smtp.gmail.com'
+        smtp_port = 587
+        smtp_username = 'devinsightlemon@gmail.com'
+        smtp_password = 'fvgj qctg bvmq zkva'
+
+        verification_url = f"http://127.0.0.1:8000/verify-email?token={verification_token}"
+
+        sender_email = smtp_username
+        receiver_email = email
+        message = MIMEMultipart()
+        message['From'] = sender_email
+        message['To'] = receiver_email
+        message['Subject'] = 'Verify Your Email'
+
+        body = f"""
+        Hello,
+
+        Please click the following link to verify your email:
+        {verification_url}
+
+        Thank you,
+        Your Company Team
+        """
+        message.attach(MIMEText(body, 'plain'))
+
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_username, smtp_password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+            print(f"Verification email sent to {receiver_email}")
+        except Exception as e:
+            print(f"Failed to send verification email: {str(e)}")
+    async def update_email_verification(self, email: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            result = await self.__collection.update_one(
+                {"admin_email": email},
+                {"$set": {"email_verified": True}}
+            )
+            if result.modified_count == 1:
+                action_result.message = "Email verified successfully"
+            else:
+                action_result.status = False
+                action_result.message = "Invalid or expired token"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+        finally:
+            return action_result        
+
+    async def check_email_exists(self, email: str) -> bool:
+        company = await self.__collection.find_one({"admin_email": email})
+        return company is not None
+    
     async def check_email(self, email: str) -> bool:
         try:
             result = await self.__collection.find_one({"admin_email": email})
@@ -192,6 +261,41 @@ class DatabaseConnector:
             
         except Exception as e:
             return ActionResult(status=False, message=f"Error occurred: {str(e)}")
+        
+    # async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
+    #     action_result = ActionResult(status=True)
+    #     try:
+    #         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    #         hashed_password = pwd_context.hash(entity.password)
+
+    #         company_entity = CompanyModel(
+    #             company_name=entity.company_name,
+              
+    #             admin_email=entity.admin_email,
+    #             company_address=entity.company_address,
+    #             phone_number=entity.phone_number,
+    #             has_custom_domain=entity.has_custom_domain,
+    #             domain=entity.domain,
+               
+    #             hash_password=hashed_password,
+    #             email_verified=False
+    #         )
+
+    #         company_dict = company_entity.dict(by_alias=True)
+    #         result = await self.__collection.insert_one(company_dict)
+
+    #         action_result.data = result.inserted_id
+    #         action_result.message = "Insert successful"
+    #     except Exception as e:
+    #         action_result.status = False
+    #         action_result.message = "Action failed"
+    #     finally:
+    #         return action_result
+    ##   old
+        
+       
+
+    
     # Add the check_username method
     # async def check_username(self, username: str) -> bool:
     #     try:
