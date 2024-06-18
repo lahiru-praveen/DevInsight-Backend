@@ -72,6 +72,45 @@ async def verify_email(token: str):
 
     except (SignatureExpired, BadSignature):
         raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+# @company_main_router.post("/create-company")
+# async def create_company_verification(record: CreateCompanyModel):
+#     email = record.admin_email
+    
+#     # Generate token and send verification email
+#     serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+#     verification_token = serializer.dumps(email, salt='email-confirm-salt')
+    
+#     await db_company.send_verification_email(email, verification_token)
+    
+#     # Return message to inform the user to verify email
+#     return {"message": "Verification email sent. Please verify your email to complete registration."}
+
+# @company_main_router.get("/verify-email")
+# async def verify_email(token: str, email: str):
+#     serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+#     try:
+#         verified_email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
+#         print(verified_email)
+#         if verified_email != email:
+#             raise HTTPException(status_code=400, detail="Invalid token or email")
+
+#         # Save the company data after successful email verification
+#         action_result = await db_company.update_email_verification(email)
+#         if action_result.status:
+#             return {"message": "Email verified successfully. Please complete your registration by submitting your details."}
+#         else:
+#             raise HTTPException(status_code=400, detail=action_result.message)
+
+#     except (SignatureExpired, BadSignature):
+#         raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+# @company_main_router.post("/save-company-data")
+# async def save_company_data(record: CreateCompanyModel):
+#     action_result = await db_company.save_company_data(record)
+#     if not action_result.status:
+#         raise HTTPException(status_code=400, detail=action_result.message)
+#     return {"message": action_result.message}
     
 @company_main_router.get("/invite-table")
 async def get_invite_table():

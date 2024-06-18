@@ -79,7 +79,7 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    ## new 
+    # new 
     async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
@@ -167,6 +167,89 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result        
+    # async def send_verification_email(self, email: str, verification_token: str):
+    #     smtp_server = 'smtp.gmail.com'
+    #     smtp_port = 587
+    #     smtp_username = 'devinsightlemon@gmail.com'
+    #     smtp_password = 'fvgj qctg bvmq zkva'
+
+    #     verification_url = f"http://127.0.0.1:8000/verify-email?token={verification_token}&email={email}"
+
+    #     sender_email = smtp_username
+    #     receiver_email = email
+    #     message = MIMEMultipart()
+    #     message['From'] = sender_email
+    #     message['To'] = receiver_email
+    #     message['Subject'] = 'Verify Your Email'
+
+    #     body = f"""
+    #     Hello,
+
+    #     Please click the following link to verify your email:
+    #     {verification_url}
+
+    #     Thank you,
+    #     Your Company Team
+    #     """
+    #     message.attach(MIMEText(body, 'plain'))
+
+    #     try:
+    #         with smtplib.SMTP(smtp_server, smtp_port) as server:
+    #             server.starttls()
+    #             server.login(smtp_username, smtp_password)
+    #             server.sendmail(sender_email, receiver_email, message.as_string())
+    #         print(f"Verification email sent to {receiver_email}")
+    #     except Exception as e:
+    #         print(f"Failed to send verification email: {str(e)}")
+
+    # async def save_company_data(self, entity: CreateCompanyModel) -> ActionResult:
+    #     action_result = ActionResult(status=True)
+    #     try:
+    #         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    #         hashed_password = pwd_context.hash(entity.password)
+
+    #         company_entity = CompanyModel(
+    #             company_name=entity.company_name,
+    #             admin_email=entity.admin_email,
+    #             company_address=entity.company_address,
+    #             phone_number=entity.phone_number,
+    #             has_custom_domain=entity.has_custom_domain,
+    #             domain=entity.domain,
+    #             hash_password=hashed_password,
+    #             email_verified=True,
+    #             logo_url=entity.logo_url
+    #         )
+
+    #         company_dict = company_entity.dict(by_alias=True)
+    #         result = await self.__collection.insert_one(company_dict)
+
+    #         action_result.data = result.inserted_id
+    #         action_result.message = "Company data saved successfully."
+    #     except Exception as e:
+    #         action_result.status = False
+    #         action_result.message = "Failed to save company data."
+    #         print(e)
+    #     finally:
+    #         return action_result
+
+    # async def update_email_verification(self, email: str) -> ActionResult:
+    #     action_result = ActionResult(status=True)
+    #     try:
+    #         result = await self.__collection.update_one(
+    #             {"admin_email": email},
+    #             {"$set": {"email_verified": True}}
+    #         )
+    #         if result.modified_count == 0:
+    #             action_result.status = False
+    #             action_result.message = "Email verification failed."
+    #         else:
+    #             action_result.message = "Email verified successfully."
+    #     except Exception as e:
+    #         action_result.status = False
+    #         action_result.message = f"Failed to update email verification: {str(e)}"
+    #         print(e)
+    #     finally:
+    #         return action_result
 
     async def check_email_exists(self, email: str) -> bool:
         company = await self.__collection.find_one({"admin_email": email})
@@ -261,6 +344,58 @@ class DatabaseConnector:
             
         except Exception as e:
             return ActionResult(status=False, message=f"Error occurred: {str(e)}")
+    
+    async def send_changerole_email(self, first_name: str, last_name: str, email: str, new_role: str):
+        smtp_server = 'smtp.gmail.com'
+        smtp_port = 587
+        smtp_username = 'devinsightlemon@gmail.com'
+        smtp_password = 'fvgj qctg bvmq zkva'
+
+        
+        sender_email = smtp_username
+        receiver_email = email
+        message = MIMEMultipart()
+        message['From'] = sender_email
+        message['To'] = receiver_email
+        message['Subject'] = 'Role changed'
+
+        body = f"""
+        Hello,
+
+        Hello {first_name} {last_name} Your active role have been change to {new_role}.
+        
+
+        Thank you,
+        Devinsight Team
+        """
+        message.attach(MIMEText(body, 'plain'))
+
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_username, smtp_password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+            print(f"imforming email sent to {receiver_email}")
+        except Exception as e:
+            print(f"Failed to send informing email: {str(e)}")
+            
+    async def update_email_verification(self, email: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            result = await self.__collection.update_one(
+                {"admin_email": email},
+                {"$set": {"email_verified": True}}
+            )
+            if result.modified_count == 1:
+                action_result.message = "Email verified successfully"
+            else:
+                action_result.status = False
+                action_result.message = "Invalid or expired token"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+        finally:
+            return action_result       
         
     # async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
     #     action_result = ActionResult(status=True)
