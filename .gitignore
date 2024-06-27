@@ -3,3 +3,4 @@
 /keys.txt
 *.pyc
 __pycache__/
+*.py[cod]
