@@ -39,31 +39,6 @@ async def get_members_by_organization_email(organization_email: str):
         # Handle unexpected errors gracefully
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
-# @manage_portal_router.put("/update-member-role")
-# async def update_member_role(role_update_request: RoleUpdateRequest):
-#     try:
-#         organization_email = role_update_request.organization_email
-#         email = role_update_request.email
-#         new_role = role_update_request.new_role
-
-#         # Call the asynchronous function from DatabaseConnector
-#         action_result = await db_company.update_member_role(organization_email, email, new_role)
-
-#         # Check if operation was successful
-#         if action_result.status:
-#             # Return success message if successful
-#             return {"message": action_result.message}
-#         else:
-#             # Raise HTTPException with 404 status code and error message
-#             raise HTTPException(status_code=404, detail=action_result.message)
-    
-#     except HTTPException as e:
-#         # Re-raise HTTPException to ensure correct status code and message propagation
-#         raise e
-    
-#     except Exception as e:
-#         # Handle unexpected errors gracefully
-#         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 @manage_portal_router.put("/update-member-role")
 async def update_member_role(role_update_request: RoleUpdateRequest):
     try:
@@ -94,3 +69,28 @@ async def update_member_role(role_update_request: RoleUpdateRequest):
     except Exception as e:
         # Handle unexpected errors gracefully
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+# @manage_portal_router.put("/update-member-role")
+# async def update_member_role(role_update_request: RoleUpdateRequest):
+#     try:
+#         organization_email = role_update_request.organization_email
+#         email = role_update_request.email
+#         new_role = role_update_request.new_role
+
+#         # Call the asynchronous function from DatabaseConnector
+#         action_result = await db_company.update_member_role(organization_email, email, new_role)
+
+#         # Check if operation was successful
+#         if action_result.status:
+#             # Return success message if successful
+#             return {"message": action_result.message}
+#         else:
+#             # Raise HTTPException with 404 status code and error message
+#             raise HTTPException(status_code=404, detail=action_result.message)
+    
+#     except HTTPException as e:
+#         # Re-raise HTTPException to ensure correct status code and message propagation
+#         raise e
+    
+#     except Exception as e:
+#         # Handle unexpected errors gracefully
+#         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

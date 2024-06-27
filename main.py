@@ -9,7 +9,7 @@ from routes.interact_llm import llm_router
 from routes.language_checker import lan_check_router
 from routes.submissions import submission_router
 from routes.manage_portal import manage_portal_router
-
+from routes.invite_main import invite_main_router
 
 app = FastAPI()
 
@@ -38,6 +38,7 @@ app.include_router(manage_portal_router)
 
 
 
+app.include_router(invite_main_router)
 
 
 
