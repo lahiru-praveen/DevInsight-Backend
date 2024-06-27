@@ -1,3 +1,5 @@
 /venv
 /.env
 /keys.txt
+*.pyc
+__pycache__/
