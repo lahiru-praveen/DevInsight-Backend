@@ -10,6 +10,9 @@ import binascii
 from config import config
 from pymongo.errors import ServerSelectionTimeoutError
 import motor.motor_asyncio
+from fastapi.staticfiles import StaticFiles
+import os
+from fastapi.responses import JSONResponse
 
 db_company = DatabaseConnector("company")
 
@@ -62,7 +65,28 @@ async def get_dummy_data():
     ]
     return dummy_data
 
+company_main_router.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
+@company_main_router.post("/upload-logo")
+async def upload_logo(admin_email: str = Form(...), file: UploadFile = File(...)):
+        assets_dir = "assets"
+        if not os.path.exists(assets_dir):
+            os.makedirs(assets_dir)
+
+        file_path = os.path.join(assets_dir, file.filename)
+        try:
+            with open(file_path, "wb") as buffer:
+                buffer.write(await file.read())
+
+            logo_url = f"/{file_path}"  # Ensure this matches your file structure
+            update_data = UpdateCompanyModel(logo_url=logo_url)
+            action_result = await db_company.update_company_by_email(admin_email, update_data)
+            if not action_result.status:
+                raise HTTPException(status_code=400, detail=action_result.message)
+
+            return JSONResponse(content={"logo_url": logo_url}, status_code=200)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 @company_main_router.get("/get-organization-data")
 async def get_organization_data(admin_email: str = Query(...)):
     action_result = await db_company.get_company_by_admin_email(admin_email)
@@ -159,3 +183,5 @@ async def update_company(admin_email: str, update_data: UpdateCompanyModel):
 #     }
 #     return data
 #last change
+
+
