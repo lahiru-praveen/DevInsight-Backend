@@ -159,6 +159,15 @@ async def update_company(admin_email: str, update_data: UpdateCompanyModel):
     if not action_result.status:
         raise HTTPException(status_code=400, detail=action_result.message)
     return action_result
+
+
+@company_main_router.get("/get-organizations-with-custom-domain")
+async def get_organizations_with_custom_domain():
+    result = await db_company.get_organizations_with_custom_domain()
+    if result.status:
+        return JSONResponse(status_code=200, content={"data": result.data, "message": result.message})
+    else:
+        return JSONResponse(status_code=500, content={"message": result.message})
 # @company_main_router.post("/create-company")
 # async def create_company_verification(record: CreateCompanyModel):
 #     email = record.admin_email
