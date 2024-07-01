@@ -1,6 +1,7 @@
 import datetime
 import json
 from bson import ObjectId, json_util
+from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 from pymongo import DESCENDING
 from pymongo.errors import ServerSelectionTimeoutError
@@ -391,6 +392,30 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result
+        
+    async def get_organizations_with_custom_domain(self) -> ActionResult:
+        action_result = ActionResult(status=True)
+
+        try:
+            query = {"has_custom_domain": True}
+            projection = {"company_name": 1, "admin_email": 1, "domain": 1}
+            cursor = self.__collection.find(query, projection)
+
+            organizations = []
+            async for document in cursor:
+                json_doc = json.loads(json_util.dumps(document))
+                organizations.append({
+                    "company_name": json_doc["company_name"],
+                    "admin_email": json_doc["admin_email"],
+                    "domain": json_doc["domain"]
+                })
+            action_result.data = organizations
+            action_result.message = "Organizations with custom domains retrieved successfully"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+        finally:
+            return action_result   
 
     async def update_member_role(self, organization_email: str, email: str, new_role: str) -> ActionResult:
         try:
@@ -732,3 +757,74 @@ class DatabaseConnector:
             action_result.message = "Action failed"
         finally:
             return action_result
+
+    async def get_user_by_email(self, email: str):
+        entity = await self.__collection.find_one({"email": email})
+        return entity
+
+    async def add_user_profile(self, entity: BaseModel):
+        entity_dict = entity.dict(by_alias=True, exclude={"id"})
+        await self.__collection.insert_one(entity_dict)
+
+    async def authenticate_user(self, email: str, password: str):
+        from utilis.profile import verify_password
+        existing_user = await self.__collection.find_one({"email": email})
+        if not existing_user or not verify_password(password, existing_user["password"]):
+            raise HTTPException(status_code=401, detail="Incorrect email or password")
+        return existing_user
+
+    async def update_user_status(self, entity: BaseModel):
+        await self.__collection.update_one(
+                {"email": entity.email},
+                {"$set": {"profileStatus": "Active"}}
+            )
+
+    async def deactivate_users(self, email: str):
+        user = await self.__collection.find_one({"email": email, "profileStatus": {"$ne": "Suspend"}})
+        if user:
+            await self.__collection.update_one({"email": email}, {"$set": {"profileStatus": "Suspend"}})
+            return {"message": "Account deactivated successfully"}
+        raise HTTPException(status_code=404, detail="User not found or account already deactivated")
+
+    async def delete_user_profile(self, email: str):
+        result=await self.__collection.delete_one({"email": email})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"message": "User deleted successfully"}
+
+    async def save_user_profile(self, email: str, profile_data: dict):
+        await self.__collection.update_one(
+            {"email": email},
+            {"$set": profile_data},
+            upsert=True
+        )
+
+    async def get_user_profile_by_id(self, email: str):
+        user = await self.__collection.find_one({"email": email}, {"_id": 0})
+        return user
+
+    async def update_password(self, email: str, password: str):
+        await self.__collection.update_one({"email": email}, {"$set": {"password": password}})
+
+    async def save_verification_code(self, entity: BaseModel):
+        await self.__collection.update_one(
+        {"email": entity.email},
+        {"$set": {"verificationCode": entity.verificationCode}},upsert=True
+        )
+        return {"message": "Verification code saved"}
+
+    async def get_verify_code(self, entity: BaseModel):
+        return await self.__collection.get(entity.email)
+
+    async def update_profile_status(self, entity: BaseModel):
+        result =await self.__collection.update_one(
+            {"email": entity.email},
+            {"$set": {"profileStatus": entity.profileStatus}}
+            )
+        return result
+
+    async def update_register_face(self, email: str, face_data: dict):
+        await self.__collection.update_one({"email": email}, {"$set": face_data})
+
+    async def login_face(self):
+        return await self.__collection.find().to_list(length=None)
