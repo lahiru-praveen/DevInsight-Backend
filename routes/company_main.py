@@ -10,6 +10,9 @@ import binascii
 from config import config
 from pymongo.errors import ServerSelectionTimeoutError
 import motor.motor_asyncio
+from fastapi.staticfiles import StaticFiles
+import os
+from fastapi.responses import JSONResponse
 
 db_company = DatabaseConnector("company")
 
@@ -18,6 +21,44 @@ company_main_router = APIRouter()
 
 
 
+# @company_main_router.get("/check-company-email")
+# async def check_company_email(email: str):
+#     email_exists = await db_company.check_email_exists(email)
+#     return {"exists": email_exists}
+
+# @company_main_router.get("/check-company-username")
+# async def check_company_username(username: str = Query(...)):
+#     existing_username = await db_company.check_username(username)
+#     if existing_username:
+#         return {"exists": True}
+#     return {"exists": False}
+
+# @company_main_router.post("/create-company")
+# async def post_company(record: CreateCompanyModel):
+#     action_result1 = await db_company.create_company(record)  # Pass the Pydantic model instance
+#     print(action_result1)
+
+# @company_main_router.get("/verify-email")
+# async def verify_email(token: str):
+#     try:
+#         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+#         email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
+
+#         # Update email verification status in the database
+#         result = await db_company.update_email_verification(email)
+
+#         if result.status:
+#             return {"message": "Email verified successfully"}
+#         else:
+#             raise HTTPException(status_code=400, detail=result.message)
+
+#     except (SignatureExpired, BadSignature):
+#         raise HTTPException(status_code=400, detail="Invalid or expired token")
+##ok for last night
+# @company_main_router.get("/check-company-email")
+# async def check_company_email(email: str):
+#     email_exists = await db_company.check_email_exists(email)
+#     return {"exists": email_exists}
 @company_main_router.get("/check-company-email")
 async def check_company_email(email: str):
     email_exists = await db_company.check_email_exists(email)
@@ -32,27 +73,41 @@ async def check_company_username(username: str = Query(...)):
 
 @company_main_router.post("/create-company")
 async def post_company(record: CreateCompanyModel):
-    action_result1 = await db_company.create_company(record)  # Pass the Pydantic model instance
-    print(action_result1)
+    action_result1 = await db_company.create_company(record)
+    if action_result1.status:
+        return {"message": action_result1.message, "data": str(action_result1.data)}
+    else:
+        raise HTTPException(status_code=400, detail=action_result1.message)
 
+# @company_main_router.get("/verify-email")
+# async def verify_email(token: str):
+#     try:
+#         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+#         email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
+
+#         result = await db_company.update_email_verification(email)
+#         if result.status:
+#             return {"message": "Email verified successfully"}
+#         else:
+            
+#             raise HTTPException(status_code=400, detail=result.message)
+#     except (SignatureExpired, BadSignature):
+#         raise HTTPException(status_code=400, detail="Invalid or expired token")
 @company_main_router.get("/verify-email")
 async def verify_email(token: str):
     try:
         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
         email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
 
-        # Update email verification status in the database
         result = await db_company.update_email_verification(email)
-
         if result.status:
             return {"message": "Email verified successfully"}
         else:
+            await db_company.delete_company_by_email(email)
             raise HTTPException(status_code=400, detail=result.message)
-
     except (SignatureExpired, BadSignature):
+        await db_company.delete_company_by_email(email)
         raise HTTPException(status_code=400, detail="Invalid or expired token")
-
-
 
 @company_main_router.get("/")
 async def get_dummy_data():
@@ -62,7 +117,28 @@ async def get_dummy_data():
     ]
     return dummy_data
 
+company_main_router.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
+@company_main_router.post("/upload-logo")
+async def upload_logo(admin_email: str = Form(...), file: UploadFile = File(...)):
+        assets_dir = "assets"
+        if not os.path.exists(assets_dir):
+            os.makedirs(assets_dir)
+
+        file_path = os.path.join(assets_dir, file.filename)
+        try:
+            with open(file_path, "wb") as buffer:
+                buffer.write(await file.read())
+
+            logo_url = f"/{file_path}"  # Ensure this matches your file structure
+            update_data = UpdateCompanyModel(logo_url=logo_url)
+            action_result = await db_company.update_company_by_email(admin_email, update_data)
+            if not action_result.status:
+                raise HTTPException(status_code=400, detail=action_result.message)
+
+            return JSONResponse(content={"logo_url": logo_url}, status_code=200)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 @company_main_router.get("/get-organization-data")
 async def get_organization_data(admin_email: str = Query(...)):
     action_result = await db_company.get_company_by_admin_email(admin_email)
@@ -159,3 +235,5 @@ async def update_company(admin_email: str, update_data: UpdateCompanyModel):
 #     }
 #     return data
 #last change
+
+

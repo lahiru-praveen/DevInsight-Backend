@@ -6,7 +6,7 @@ from pydantic import BaseModel
 #     phone_number: str
 
 class UpdateCompanyModel(BaseModel):
-    company_name: str
-    company_address: str
-    phone_number: str
-    logo_url: str 
+    company_name: str = ""
+    company_address: str = ""
+    phone_number: str = ""
+    logo_url: str = ""

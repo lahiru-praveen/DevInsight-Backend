@@ -11,6 +11,7 @@ from routes.submissions import submission_router
 from routes.manage_portal import manage_portal_router
 from routes.invite_main import invite_main_router
 from routes.user_request import request_router
+from routes.organization_register import organization_register_router
 
 app = FastAPI()
 
@@ -40,6 +41,8 @@ app.include_router(request_router)
 app.include_router(manage_portal_router)
 
 app.include_router(invite_main_router)
+
+app.include_router(organization_register_router)
 
 
 
