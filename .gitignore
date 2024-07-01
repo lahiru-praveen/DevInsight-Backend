@@ -2,5 +2,6 @@
 /.env
 /keys.txt
 *.pyc
+_pycache_/
 __pycache__/
 *.py[cod]

@@ -182,6 +182,22 @@ class DatabaseConnector:
             print(e)
         finally:
             return action_result
+    async def delete_company_by_email(self, email: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            delete_result = await self.__collection.delete_one({"admin_email": email})
+            if delete_result.deleted_count == 1:
+                action_result.message = "Company record deleted successfully."
+            else:
+                action_result.status = False
+                action_result.message = "No company record found with the given email."
+        except Exception as e:
+            action_result.status = False
+            action_result.message = "Failed to delete company record."
+            print(e)
+        finally:
+            return action_result    
+        
 
     async def add_review(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
@@ -211,16 +227,67 @@ class DatabaseConnector:
         message['To'] = receiver_email
         message['Subject'] = 'Verify Your Email'
 
-        body = f"""
-        Hello,
-
-        Please click the following link to verify your email:
-        {verification_url}
-
-        Thank you,
-        Your Company Team
+        html_body = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Email Verification</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: #f4f4f4;
+                }}
+                .container {{
+                    background-color: #ffffff;
+                    padding: 30px;
+                    border-radius: 5px;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                }}
+                h1 {{
+                    color: #0077be;
+                }}
+                .button {{
+                    display: inline-block;
+                    padding: 10px 20px;
+                    background-color: #0077be;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin-top: 20px;
+                }}
+                .footer {{
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 0.9em;
+                    color: #666;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Verify Your Email</h1>
+                <p>Hello,</p>
+                <p>Thank you for signing up. Please click the button below to verify your email address:</p>
+                <a href="{verification_url}" class="button">Verify Email</a>
+                <p>If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
+                <p>{verification_url}</p>
+                <p>Thank you,<br>Your Company Team</p>
+            </div>
+            <div class="footer">
+                <p>This email was sent by Your Company. Please do not reply to this email.</p>
+            </div>
+        </body>
+        </html>
         """
-        message.attach(MIMEText(body, 'plain'))
+
+        message.attach(MIMEText(html_body, 'html'))
 
         try:
             with smtplib.SMTP(smtp_server, smtp_port) as server:
@@ -230,27 +297,20 @@ class DatabaseConnector:
             print(f"Verification email sent to {receiver_email}")
         except Exception as e:
             print(f"Failed to send verification email: {str(e)}")
-    async def update_email_verification(self, email: str) -> ActionResult:
-        action_result = ActionResult(status=True)
-        try:
-            result = await self.__collection.update_one(
-                {"admin_email": email},
-                {"$set": {"email_verified": True}}
-            )
-            if result.modified_count == 1:
-                action_result.message = "Email verified successfully"
-            else:
-                action_result.status = False
-                action_result.message = "Invalid or expired token"
-        except Exception as e:
-            action_result.status = False
-            action_result.message = f"Error occurred: {str(e)}"
-        finally:
-            return action_result
 
+    # async def check_email_exists(self, email: str) -> bool:
+    #     company = await self.__collection.find_one({"admin_email": email})
+    #     return company is not None
     async def check_email_exists(self, email: str) -> bool:
-        company = await self.__collection.find_one({"admin_email": email})
-        return company is not None
+        try:
+            company = await self.__collection.find_one({"admin_email": email})
+            if company and not company.get("email_verified", False):
+                await self.delete_company_by_email(email)
+                return False
+            return company is not None
+        except Exception as e:
+            print(e)
+            return False
 
     async def check_email(self, email: str) -> bool:
         try:
@@ -284,16 +344,20 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result
-
+## worked till 2024.06.29
     async def update_company_by_email(self, admin_email: str, update_data: UpdateCompanyModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-            update_fields = {
-                "company_name": update_data.company_name,
-                "company_address": update_data.company_address,
-                "phone_number": update_data.phone_number,
-                "logo_url": update_data.logo_url  # Ensure this line is included
-            }
+            update_fields = {}
+            if update_data.company_name:
+                update_fields["company_name"] = update_data.company_name
+            if update_data.company_address:
+                update_fields["company_address"] = update_data.company_address
+            if update_data.phone_number:
+                update_fields["phone_number"] = update_data.phone_number
+            if update_data.logo_url:
+                update_fields["logo_url"] = update_data.logo_url
+
             result = await self.__collection.update_one(
                 {"admin_email": admin_email},
                 {"$set": update_fields}
