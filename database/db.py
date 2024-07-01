@@ -391,6 +391,30 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result
+        
+    async def get_organizations_with_custom_domain(self) -> ActionResult:
+        action_result = ActionResult(status=True)
+
+        try:
+            query = {"has_custom_domain": True}
+            projection = {"company_name": 1, "admin_email": 1, "domain": 1}
+            cursor = self.__collection.find(query, projection)
+
+            organizations = []
+            async for document in cursor:
+                json_doc = json.loads(json_util.dumps(document))
+                organizations.append({
+                    "company_name": json_doc["company_name"],
+                    "admin_email": json_doc["admin_email"],
+                    "domain": json_doc["domain"]
+                })
+            action_result.data = organizations
+            action_result.message = "Organizations with custom domains retrieved successfully"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+        finally:
+            return action_result   
 
     async def update_member_role(self, organization_email: str, email: str, new_role: str) -> ActionResult:
         try:
