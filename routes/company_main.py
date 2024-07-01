@@ -21,6 +21,44 @@ company_main_router = APIRouter()
 
 
 
+# @company_main_router.get("/check-company-email")
+# async def check_company_email(email: str):
+#     email_exists = await db_company.check_email_exists(email)
+#     return {"exists": email_exists}
+
+# @company_main_router.get("/check-company-username")
+# async def check_company_username(username: str = Query(...)):
+#     existing_username = await db_company.check_username(username)
+#     if existing_username:
+#         return {"exists": True}
+#     return {"exists": False}
+
+# @company_main_router.post("/create-company")
+# async def post_company(record: CreateCompanyModel):
+#     action_result1 = await db_company.create_company(record)  # Pass the Pydantic model instance
+#     print(action_result1)
+
+# @company_main_router.get("/verify-email")
+# async def verify_email(token: str):
+#     try:
+#         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+#         email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
+
+#         # Update email verification status in the database
+#         result = await db_company.update_email_verification(email)
+
+#         if result.status:
+#             return {"message": "Email verified successfully"}
+#         else:
+#             raise HTTPException(status_code=400, detail=result.message)
+
+#     except (SignatureExpired, BadSignature):
+#         raise HTTPException(status_code=400, detail="Invalid or expired token")
+##ok for last night
+# @company_main_router.get("/check-company-email")
+# async def check_company_email(email: str):
+#     email_exists = await db_company.check_email_exists(email)
+#     return {"exists": email_exists}
 @company_main_router.get("/check-company-email")
 async def check_company_email(email: str):
     email_exists = await db_company.check_email_exists(email)
@@ -35,27 +73,41 @@ async def check_company_username(username: str = Query(...)):
 
 @company_main_router.post("/create-company")
 async def post_company(record: CreateCompanyModel):
-    action_result1 = await db_company.create_company(record)  # Pass the Pydantic model instance
-    print(action_result1)
+    action_result1 = await db_company.create_company(record)
+    if action_result1.status:
+        return {"message": action_result1.message, "data": str(action_result1.data)}
+    else:
+        raise HTTPException(status_code=400, detail=action_result1.message)
 
+# @company_main_router.get("/verify-email")
+# async def verify_email(token: str):
+#     try:
+#         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+#         email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
+
+#         result = await db_company.update_email_verification(email)
+#         if result.status:
+#             return {"message": "Email verified successfully"}
+#         else:
+            
+#             raise HTTPException(status_code=400, detail=result.message)
+#     except (SignatureExpired, BadSignature):
+#         raise HTTPException(status_code=400, detail="Invalid or expired token")
 @company_main_router.get("/verify-email")
 async def verify_email(token: str):
     try:
         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
         email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
 
-        # Update email verification status in the database
         result = await db_company.update_email_verification(email)
-
         if result.status:
             return {"message": "Email verified successfully"}
         else:
+            await db_company.delete_company_by_email(email)
             raise HTTPException(status_code=400, detail=result.message)
-
     except (SignatureExpired, BadSignature):
+        await db_company.delete_company_by_email(email)
         raise HTTPException(status_code=400, detail="Invalid or expired token")
-
-
 
 @company_main_router.get("/")
 async def get_dummy_data():
