@@ -544,10 +544,8 @@ class DatabaseConnector:
             print(f"Verification email sent to {receiver_email}")
         except Exception as e:
             print(f"Failed to send verification email: {str(e)}")
-
-
-
-            return action_result
+        finally:
+            return 0
 
     async def delete_review(self, entity_id: int) -> ActionResult:
         action_result = ActionResult(status=True)
