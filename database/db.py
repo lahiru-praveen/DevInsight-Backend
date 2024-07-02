@@ -21,16 +21,9 @@ from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
 import secrets
 from datetime import datetime
-
-
+from models.member import MemberModel
 
 SECURITY_PASSWORD_SALT = secrets.token_hex(16)
-
-class MemberModel(BaseModel):
-    email: str
-    first_name: str
-    last_name: str
-    role: str
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
@@ -380,7 +373,7 @@ class DatabaseConnector:
 
         try:
             query = {"organization_email": organization_email}
-            projection = {"first_name": 1, "last_name": 1, "email": 1, "role": 1}
+            projection = {"first_name": 1, "last_name": 1, "email": 1, "role": 1, "profileStatus": 1}
             cursor = self.__collection.find(query, projection)
 
             members = []
@@ -394,6 +387,28 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result
+        
+    async def block_unblock_member(self, organization_email: str, email: str, action: str) -> ActionResult:
+        try:
+            query = {"organization_email": organization_email, "email": email}
+            
+            # Determine the new profile status based on the action
+            new_status = None
+            if action == 'block':
+                new_status = 'Blocked'
+            elif action == 'unblock':
+                new_status = 'Active'
+            
+            # Update the profileStatus in the database
+            result = await self.__collection.update_one(query, {"$set": {"profileStatus": new_status}})
+            
+            if result.modified_count == 1:
+                return ActionResult(status=True, message=f"Member {email} {action}ed successfully")
+            else:
+                return ActionResult(status=False, message=f"Failed to {action} member or no changes made")
+        
+        except Exception as e:
+            return ActionResult(status=False, message=f"Error occurred: {str(e)}")    
         
     async def get_organizations_with_custom_domain(self) -> ActionResult:
         action_result = ActionResult(status=True)
