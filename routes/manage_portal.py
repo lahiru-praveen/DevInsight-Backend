@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from database.db import DatabaseConnector
 from pydantic import BaseModel
 from models.action_result import ActionResult
-
+from models.blockunblockreq import BlockUnblockRequest
 # Assuming DatabaseConnector is imported correctly and initialized as db_company
 db_company = DatabaseConnector("Members")
 
@@ -69,6 +69,39 @@ async def update_member_role(role_update_request: RoleUpdateRequest):
     except Exception as e:
         # Handle unexpected errors gracefully
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@manage_portal_router.put("/block-unblock-member")
+async def block_unblock_member(request: BlockUnblockRequest):
+    try:
+        organization_email = request.organization_email
+        email = request.email
+        action = request.action
+        
+        # Validate action
+        if action not in ['block', 'unblock']:
+            raise HTTPException(status_code=400, detail="Invalid action. Must be 'block' or 'unblock'.")
+        
+        # Call the asynchronous function from DatabaseConnector to update member profile status
+        action_result = await db_company.block_unblock_member(organization_email, email, action)
+        
+        # Check if operation was successful
+        if action_result.status:
+            # Return success message if successful
+            return {"message": action_result.message}
+        else:
+            # Raise HTTPException with 404 status code and error message
+            raise HTTPException(status_code=404, detail=action_result.message)
+    
+    except HTTPException as e:
+        # Re-raise HTTPException to ensure correct status code and message propagation
+        raise e
+    
+    except Exception as e:
+        # Handle unexpected errors gracefully
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    
+    
 # @manage_portal_router.put("/update-member-role")
 # async def update_member_role(role_update_request: RoleUpdateRequest):
 #     try:
