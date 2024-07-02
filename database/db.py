@@ -197,13 +197,13 @@ class DatabaseConnector:
             return action_result
 
     async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
+        from utilis.profile import hash_password
         action_result = ActionResult(status=True)
         try:
             serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
             verification_token = serializer.dumps(entity.admin_email, salt='email-confirm-salt')
 
-            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-            hashed_password = pwd_context.hash(entity.password)
+            hashed_password = hash_password(entity.password)
 
             company_entity = CompanyModel(
                 company_name=entity.company_name,
@@ -782,6 +782,13 @@ class DatabaseConnector:
     async def get_user_by_email(self, email: str):
         from utilis.profile import serialize_dict
         entity = await self.__collection.find_one({"email": email})
+        if entity:
+            entity = serialize_dict(entity)
+        return entity
+
+    async def get_organization_by_email(self, email: str):
+        from utilis.profile import serialize_dict
+        entity = await self.__collection.find_one({"admin_email": email})
         if entity:
             entity = serialize_dict(entity)
         return entity

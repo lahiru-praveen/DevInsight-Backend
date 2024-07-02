@@ -8,6 +8,7 @@ class User(BaseModel):
     email: str
     password: str
     company: str
+    companyEmail: str
     role: str
     skills: Optional[List[str]]
     profileStatus: str
