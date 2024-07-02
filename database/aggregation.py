@@ -1,6 +1,11 @@
 import pymongo
 
-get_next_operator_id_pipeline = [
+get_next_operator_id_pipeline = lambda user: [
+    {
+        '$match': {
+            'user': user
+        }
+    },
     {
         '$sort': {
             'p_id': pymongo.DESCENDING
