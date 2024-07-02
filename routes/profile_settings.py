@@ -54,7 +54,7 @@ async def change_password(email: str = Body(...), new_password: str = Body(...))
 
 @profile_settings_router.post("/save-verification-code")
 async def save_verification_code(request: SaveVerificationCodeRequest):
-    await user_db.save_verification_code(request)
+    await verify_db.save_verification_code(request)
 
 @profile_settings_router.post("/verify-email")
 async def verify_email(request: VerifyEmailRequest):
