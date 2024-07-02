@@ -22,6 +22,8 @@ from itsdangerous import URLSafeTimedSerializer
 import secrets
 from datetime import datetime
 
+
+
 SECURITY_PASSWORD_SALT = secrets.token_hex(16)
 
 class MemberModel(BaseModel):
@@ -759,7 +761,10 @@ class DatabaseConnector:
             return action_result
 
     async def get_user_by_email(self, email: str):
+        from utilis.profile import serialize_dict
         entity = await self.__collection.find_one({"email": email})
+        if entity:
+            entity = serialize_dict(entity)
         return entity
 
     async def add_user_profile(self, entity: BaseModel):
