@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+from bson import ObjectId
+from typing import Any, Dict
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 secret_key = config.Configurations.SECRET_KEY
@@ -103,3 +105,8 @@ def verify_password_reset(email: str, code: str) -> bool:
     return True
 def verify_password_reset_settings(email: str) -> bool:
     return True
+def serialize_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    for key, value in d.items():
+        if isinstance(value, ObjectId):
+            d[key] = str(value)
+    return d
