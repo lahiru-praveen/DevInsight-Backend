@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends, Body,UploadFile, File, Form
+from passlib.context import CryptContext
+
 from database.db import DatabaseConnector
 from models.company_data_1 import CreateCompanyModel
 from models.invites import Invite
@@ -11,8 +13,12 @@ from config import config
 from pymongo.errors import ServerSelectionTimeoutError
 import motor.motor_asyncio
 from fastapi.staticfiles import StaticFiles
+from datetime import timedelta
 import os
 from fastapi.responses import JSONResponse
+
+from models.user import User_login
+from utilis.profile import verify_password, create_access_token
 
 db_company = DatabaseConnector("company")
 
@@ -244,5 +250,27 @@ async def get_organizations_with_custom_domain():
 #     }
 #     return data
 #last change
+
+@company_main_router.post("/login-organization")
+async def login(organization: User_login):
+
+    existing_user = await db_company.get_organization_by_email(organization.email)
+    if existing_user:
+        # Check if 'password' key exists in existing_user
+        if "hash_password" in existing_user and verify_password(organization.password, existing_user["hash_password"]):
+            access_token_expires = timedelta(minutes=config.Configurations.ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(
+                data={"email": organization.email}, expires_delta=access_token_expires
+            )
+            return {
+                "message": "Login successful",
+                "access_token": access_token,
+                "token_type": "bearer",
+                "email": organization.email,
+            }
+        else:
+            raise HTTPException(status_code=401, detail="Incorrect email or password")
+    else:
+        raise HTTPException(status_code=404, detail="Organization not found")
 
 

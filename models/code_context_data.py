@@ -7,6 +7,7 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class CodeContextData(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    user: str = Field(...)
     p_id: int = Field(...)
     p_name: str = Field(...)
     f_name:str = Field(...)

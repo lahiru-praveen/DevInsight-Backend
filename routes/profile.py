@@ -10,6 +10,7 @@ from utilis.profile import hash_password
 
 profile_router = APIRouter()
 user_db = DatabaseConnector("user")
+user_db = DatabaseConnector("user")
 
 
 @profile_router.post("/signup")

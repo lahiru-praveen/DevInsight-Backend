@@ -21,16 +21,9 @@ from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
 import secrets
 from datetime import datetime
-
-
+from models.member import MemberModel
 
 SECURITY_PASSWORD_SALT = secrets.token_hex(16)
-
-class MemberModel(BaseModel):
-    email: str
-    first_name: str
-    last_name: str
-    role: str
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
@@ -46,9 +39,10 @@ class DatabaseConnector:
         except ServerSelectionTimeoutError as e:
             raise Exception("Database connection timed out", e)
 
-    async def run_aggregation(self, pipeline: list) -> ActionResult:
+    async def run_aggregation(self, pipeline: list, user: str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
+            pipeline.insert(0, {"$match": {"user": user}})
             result = await self.__collection.aggregate(pipeline).to_list(None)
             action_result.data = result
         except Exception as e:
@@ -60,7 +54,7 @@ class DatabaseConnector:
     async def add_code(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-            next_id_cursor = self.__collection.aggregate(get_next_operator_id_pipeline)
+            next_id_cursor = self.__collection.aggregate(get_next_operator_id_pipeline(entity.user))
             next_id_doc = await next_id_cursor.to_list(length=1)
             next_p_id = next_id_doc[0]['next_p_id'] if next_id_doc else 1
 
@@ -76,35 +70,11 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def delete_code(self, entity_id: int) -> ActionResult:
-        action_result = ActionResult(status=True)
-        try:
-            document = await self.__collection.find_one({"p_id": entity_id})
-            print(document)  # Debugging line to ensure document is found
-            if document:
-                delete_result = await self.__collection.delete_one({"p_id": entity_id})
-                if delete_result.deleted_count == 1:
-                    document["deleted_at"] = datetime.datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection1.insert_one(document)
-                    action_result.message = TextMessages.DELETE_SUCCESS
-                else:
-                    action_result.status = False
-                    action_result.message = TextMessages.ACTION_FAILED
-            else:
-                action_result.status = False
-                action_result.message = TextMessages.ACTION_FAILED
-        except Exception as e:
-            action_result.status = False
-            action_result.message = str(e)  # Capture the exact error message
-            print(f"Error deleting code: {e}")
-        finally:
-            return action_result
-
-    async def get_all_codes(self) -> ActionResult:
+    async def get_all_codes(self, user:str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             documents = []
-            async for document in self.__collection.find({}):
+            async for document in self.__collection.find({"user": user}):
                 if 'p_id' in document and document['p_id'] is not None:
                     json_doc = json.loads(json_util.dumps(document))
                     try:
@@ -120,11 +90,11 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_latest_p_id(self) -> ActionResult:
+    async def get_latest_p_id(self, user:str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             # Assuming your collection has a field indicating insertion order or using the default _id
-            latest_entity = await self.__collection.find_one({}, sort=[("p_id", DESCENDING)])
+            latest_entity = await self.__collection.find_one({"user":user}, sort=[("p_id", DESCENDING)])
             if latest_entity is None:
                 action_result.message = TextMessages.NOT_FOUND
                 action_result.status = False
@@ -137,10 +107,10 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_all_project_names(self) -> ActionResult:
+    async def get_all_project_names(self, user: str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-            project_names = await self.__collection.distinct("p_name")
+            project_names = await self.__collection.distinct("p_name", {"user": user})
             action_result.data = project_names
             action_result.message = TextMessages.FOUND
         except Exception as e:
@@ -149,14 +119,91 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    async def add_review(self, entity: BaseModel) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            result = await self.__collection.insert_one(entity.model_dump(by_alias=True, exclude=["id"]))
+            action_result.data = str(result.inserted_id)  # Convert ObjectId to string
+            action_result.message = TextMessages.INSERT_SUCCESS
+        except Exception as e:
+            action_result.status = False
+            action_result.message = "Failed to create company."
+            print(e)
+        finally:
+            return action_result
+
+    async def delete_code(self, entity_id: int, user: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            document = await self.__collection.find_one({"p_id": entity_id, "user": user})
+            if document:
+                delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
+                if delete_result.deleted_count == 1:
+                    document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
+                    await self.__delete_collection1.insert_one(document)
+                    action_result.message = TextMessages.DELETE_SUCCESS
+                else:
+                    action_result.status = False
+                    action_result.message = TextMessages.ACTION_FAILED
+            else:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)  # Capture the exact error message
+            print(f"Error deleting code: {e}")
+        finally:
+            return action_result
+
+    async def delete_review(self, entity_id: int, user: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            document = await self.__collection.find_one({"p_id": entity_id, "user": user})
+            print(document)  # Debugging line to ensure document is found
+            if document:
+                delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
+                if delete_result.deleted_count == 1:
+                    document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
+                    await self.__delete_collection2.insert_one(document)
+                    action_result.message = TextMessages.DELETE_SUCCESS
+                else:
+                    action_result.status = False
+                    action_result.message = TextMessages.ACTION_FAILED
+            else:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)  # Capture the exact error message
+            print(f"Error deleting review: {e}")
+        finally:
+            return action_result
+
+    async def get_review_by_id(self, entity_id: int, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            entity = await self.__collection.find_one({"p_id": entity_id, "user":user})
+            if entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                json_data = json.loads(json_util.dumps(entity))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
     async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
+        from utilis.profile import hash_password
         action_result = ActionResult(status=True)
         try:
             serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
             verification_token = serializer.dumps(entity.admin_email, salt='email-confirm-salt')
 
-            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-            hashed_password = pwd_context.hash(entity.password)
+            hashed_password = hash_password(entity.password)
 
             company_entity = CompanyModel(
                 company_name=entity.company_name,
@@ -199,20 +246,7 @@ class DatabaseConnector:
             print(e)
         finally:
             return action_result    
-        
 
-    async def add_review(self, entity: BaseModel) -> ActionResult:
-        action_result = ActionResult(status=True)
-        try:
-            result = await self.__collection.insert_one(entity.model_dump(by_alias=True, exclude=["id"]))
-            action_result.data = str(result.inserted_id)  # Convert ObjectId to string
-            action_result.message = TextMessages.INSERT_SUCCESS
-        except Exception as e:
-            action_result.status = False
-            action_result.message = "Failed to create company."
-            print(e)
-        finally:
-            return action_result
 
     async def send_verification_email(self, email: str, verification_token: str):
         smtp_server = 'smtp.gmail.com'
@@ -380,7 +414,7 @@ class DatabaseConnector:
 
         try:
             query = {"organization_email": organization_email}
-            projection = {"first_name": 1, "last_name": 1, "email": 1, "role": 1}
+            projection = {"first_name": 1, "last_name": 1, "email": 1, "role": 1, "profileStatus": 1}
             cursor = self.__collection.find(query, projection)
 
             members = []
@@ -394,6 +428,28 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result
+        
+    async def block_unblock_member(self, organization_email: str, email: str, action: str) -> ActionResult:
+        try:
+            query = {"organization_email": organization_email, "email": email}
+            
+            # Determine the new profile status based on the action
+            new_status = None
+            if action == 'block':
+                new_status = 'Blocked'
+            elif action == 'unblock':
+                new_status = 'Active'
+            
+            # Update the profileStatus in the database
+            result = await self.__collection.update_one(query, {"$set": {"profileStatus": new_status}})
+            
+            if result.modified_count == 1:
+                return ActionResult(status=True, message=f"Member {email} {action}ed successfully")
+            else:
+                return ActionResult(status=False, message=f"Failed to {action} member or no changes made")
+        
+        except Exception as e:
+            return ActionResult(status=False, message=f"Error occurred: {str(e)}")    
         
     async def get_organizations_with_custom_domain(self) -> ActionResult:
         action_result = ActionResult(status=True)
@@ -486,22 +542,7 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_review_by_id(self, entity_id: int) -> ActionResult:
-        action_result = ActionResult(status=True)
-        try:
-            entity = await self.__collection.find_one({"p_id": entity_id})
-            if entity is None:
-                action_result.message = TextMessages.NOT_FOUND
-                action_result.status = False
-            else:
-                json_data = json.loads(json_util.dumps(entity))
-                action_result.data = json_data
-                action_result.message = TextMessages.FOUND
-        except Exception as e:
-            action_result.status = False
-            action_result.message = TextMessages.ACTION_FAILED
-        finally:
-            return action_result
+
 
 
 # invitation
@@ -638,29 +679,7 @@ class DatabaseConnector:
         finally:
             return 0
 
-    async def delete_review(self, entity_id: int) -> ActionResult:
-        action_result = ActionResult(status=True)
-        try:
-            document = await self.__collection.find_one({"p_id": entity_id})
-            print(document)  # Debugging line to ensure document is found
-            if document:
-                delete_result = await self.__collection.delete_one({"p_id": entity_id})
-                if delete_result.deleted_count == 1:
-                    document["deleted_at"] = datetime.datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection2.insert_one(document)
-                    action_result.message = TextMessages.DELETE_SUCCESS
-                else:
-                    action_result.status = False
-                    action_result.message = TextMessages.ACTION_FAILED
-            else:
-                action_result.status = False
-                action_result.message = TextMessages.ACTION_FAILED
-        except Exception as e:
-            action_result.status = False
-            action_result.message = str(e)  # Capture the exact error message
-            print(f"Error deleting code: {e}")
-        finally:
-            return action_result
+
 
 #     async def add_request(self, entity: BaseModel) -> ActionResult:
 #         action_result = ActionResult(status=True)
@@ -763,6 +782,13 @@ class DatabaseConnector:
     async def get_user_by_email(self, email: str):
         from utilis.profile import serialize_dict
         entity = await self.__collection.find_one({"email": email})
+        if entity:
+            entity = serialize_dict(entity)
+        return entity
+
+    async def get_organization_by_email(self, email: str):
+        from utilis.profile import serialize_dict
+        entity = await self.__collection.find_one({"admin_email": email})
         if entity:
             entity = serialize_dict(entity)
         return entity

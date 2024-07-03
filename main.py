@@ -16,7 +16,6 @@ from routes.user_request import request_router
 from routes.organization_register import organization_register_router
 from routes.bio_metrics import bio_metrics_router
 
-
 app = FastAPI()
 
 # CORS middleware configuration
@@ -53,7 +52,6 @@ app.include_router(profile_router)
 app.include_router(profile_settings_router)
 
 app.include_router(organization_register_router)
-
 app.include_router(bio_metrics_router)
 
 
