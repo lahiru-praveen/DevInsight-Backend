@@ -2,7 +2,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema.output_parser import StrOutputParser
 import os
 from config import config
-from utilis.llm.prompts import prompt1, prompt2, prompt3
+from utilis.llm_gemini.prompts import prompt1, prompt2, prompt3
 
 os.environ['GOOGLE_API_KEY'] = config.Configurations.google_api_key
 
