@@ -1,13 +1,19 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
+
+
 
 
 class CompanyModel(BaseModel):
+    
     company_name: str
-    company_uname: str
-    company_email: str
-    backup_email: str
-    manager_email: str
-    first_name: str
-    last_name: str
+    
+    admin_email: EmailStr
+    company_address: str
+    phone_number: str
+    has_custom_domain: bool
+    domain: str
+    
     hash_password: str
-    projectDetails: str
+    email_verified: bool = False
+    logo_url: str
+            
