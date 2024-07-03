@@ -34,8 +34,8 @@ class DatabaseConnector:
             self.__client.server_info()
             self.__database = self.__client.get_database(self.__database_name)
             self.__collection = self.__database.get_collection(collection_name)
-            self.__delete_collection1 = self.__database.get_collection("delete_code_records")
-            self.__delete_collection2 = self.__database.get_collection("delete_review_records")
+            self.__delete_collection_code = self.__database.get_collection("delete_code_records")
+            self.__delete_collection_review = self.__database.get_collection("delete_review_records")
         except ServerSelectionTimeoutError as e:
             raise Exception("Database connection timed out", e)
 
@@ -140,7 +140,7 @@ class DatabaseConnector:
                 delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
                 if delete_result.deleted_count == 1:
                     document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection1.insert_one(document)
+                    await self.__delete_collection_code.insert_one(document)
                     action_result.message = TextMessages.DELETE_SUCCESS
                 else:
                     action_result.status = False
@@ -164,7 +164,7 @@ class DatabaseConnector:
                 delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
                 if delete_result.deleted_count == 1:
                     document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection2.insert_one(document)
+                    await self.__delete_collection_review.insert_one(document)
                     action_result.message = TextMessages.DELETE_SUCCESS
                 else:
                     action_result.status = False
