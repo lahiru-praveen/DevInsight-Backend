@@ -19,11 +19,12 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
-import secrets
+
 from datetime import datetime
 from models.member import MemberModel
+# from utilis.emailing import send_verification_email
 
-SECURITY_PASSWORD_SALT = secrets.token_hex(16)
+
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
@@ -34,8 +35,8 @@ class DatabaseConnector:
             self.__client.server_info()
             self.__database = self.__client.get_database(self.__database_name)
             self.__collection = self.__database.get_collection(collection_name)
-            self.__delete_collection1 = self.__database.get_collection("delete_code_records")
-            self.__delete_collection2 = self.__database.get_collection("delete_review_records")
+            self.__delete_collection_code = self.__database.get_collection("delete_code_records")
+            self.__delete_collection_review = self.__database.get_collection("delete_review_records")
         except ServerSelectionTimeoutError as e:
             raise Exception("Database connection timed out", e)
 
@@ -140,7 +141,7 @@ class DatabaseConnector:
                 delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
                 if delete_result.deleted_count == 1:
                     document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection1.insert_one(document)
+                    await self.__delete_collection_code.insert_one(document)
                     action_result.message = TextMessages.DELETE_SUCCESS
                 else:
                     action_result.status = False
@@ -164,7 +165,7 @@ class DatabaseConnector:
                 delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
                 if delete_result.deleted_count == 1:
                     document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection2.insert_one(document)
+                    await self.__delete_collection_review.insert_one(document)
                     action_result.message = TextMessages.DELETE_SUCCESS
                 else:
                     action_result.status = False
@@ -334,9 +335,9 @@ class DatabaseConnector:
         except Exception as e:
             print(f"Failed to send verification email: {str(e)}")
 
-    # async def check_email_exists(self, email: str) -> bool:
-    #     company = await self.__collection.find_one({"admin_email": email})
-    #     return company is not None
+    async def check_email_exists(self, email: str) -> bool:
+        company = await self.__collection.find_one({"admin_email": email})
+        return company is not None
     async def check_email_exists(self, email: str) -> bool:
         try:
             company = await self.__collection.find_one({"admin_email": email})
@@ -410,11 +411,12 @@ class DatabaseConnector:
             return action_result
 
     async def get_members_by_organization_email(self, organization_email: str) -> ActionResult:
+        print(organization_email)
         action_result = ActionResult(status=True)
 
         try:
-            query = {"organization_email": organization_email}
-            projection = {"first_name": 1, "last_name": 1, "email": 1, "role": 1, "profileStatus": 1}
+            query = {"companyEmail": organization_email}
+            projection = {"username": 1, "email": 1, "role": 1, "profileStatus": 1, "profilePicture": 1}
             cursor = self.__collection.find(query, projection)
 
             members = []
@@ -571,6 +573,22 @@ class DatabaseConnector:
             print(e)
         finally:
             return action_result
+        
+    async def get_organization_name_by_email(self, adminEmail:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            reult = await self.__collection.find_one({"admin_email":adminEmail})
+            if reult is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                action_result.data = reult.get("company_name")
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result    
 
     async def send_invite(self, invite_data: dict) -> ActionResult:
         action_result = ActionResult(status=True)
@@ -580,8 +598,9 @@ class DatabaseConnector:
             verification_token = serializer.dumps({
                 "email": invite_data["user_email"],
                 "organization_email": invite_data["organization_email"],
+                "organization_name": invite_data["organization_name"],
                 "role": invite_data["role"]
-            }, salt=SECURITY_PASSWORD_SALT)
+            }, salt='invitation_salt')
 
             invite_data['verification_token'] = verification_token
             invite_data['sent_date'] = datetime.utcnow().isoformat()
@@ -599,7 +618,7 @@ class DatabaseConnector:
             action_result.message = "Failed to send invite"
             print(e)
         finally:
-            return action_result
+            return action_result  
 
 
     async def resend_invite(self, invite_id: str) -> ActionResult:
@@ -648,7 +667,7 @@ class DatabaseConnector:
         smtp_username = 'devinsightlemon@gmail.com'
         smtp_password = 'fvgj qctg bvmq zkva'
 
-        verification_url = f"http://127.0.0.1:8000/verify-email?token={verification_token}"
+        verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}"
 
         sender_email = smtp_username
         receiver_email = email

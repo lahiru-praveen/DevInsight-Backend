@@ -60,7 +60,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @profile_router.post("/login")
 async def login(user: User_login):
-
     existing_user = await user_db.get_user_by_email(user.email)
     if existing_user:
         # Check if 'password' key exists in existing_user

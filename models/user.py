@@ -13,6 +13,7 @@ class User(BaseModel):
     skills: Optional[List[str]]
     face_encoding: Optional[List[str]]
     profileStatus: str
+    profilePicture: Optional[str] = None
 
 class User_login(BaseModel):
     email: str
