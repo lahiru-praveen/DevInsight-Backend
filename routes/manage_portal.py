@@ -3,29 +3,22 @@ from database.db import DatabaseConnector
 from pydantic import BaseModel
 from models.action_result import ActionResult
 from models.blockunblockreq import BlockUnblockRequest
+from models.member import RoleUpdateRequest
+
 # Assuming DatabaseConnector is imported correctly and initialized as db_company
-db_company = DatabaseConnector("Members")
+
 
 # Initialize FastAPI router
 manage_portal_router = APIRouter()
+member_db = DatabaseConnector("user")
 
-class RoleUpdateRequest(BaseModel):
-    organization_email: str
-    first_name:str
-    last_name:str
-    
-    email: str
-    new_role: str
-
-
-       
 
 # Define route function using path parameter
 @manage_portal_router.get("/get-members-by-organization-email/{organization_email}")
 async def get_members_by_organization_email(organization_email: str):
     try:
         # Call the asynchronous function from DatabaseConnector
-        action_result = await db_company.get_members_by_organization_email(organization_email)
+        action_result = await member_db.get_members_by_organization_email(organization_email)
         
         # Check if operation was successful
         if action_result.status:
@@ -49,12 +42,12 @@ async def update_member_role(role_update_request: RoleUpdateRequest):
         last_name = role_update_request.last_name
 
         # Call the asynchronous function from DatabaseConnector to update member role
-        action_result = await db_company.update_member_role(organization_email, email, new_role)
+        action_result = await member_db.update_member_role(organization_email, email, new_role)
 
         # Check if operation was successful
         if action_result.status:
             # Call the send_changerole_email function
-            await db_company.send_changerole_email(first_name, last_name, email, new_role)
+            await member_db.send_changerole_email(first_name, last_name, email, new_role)
 
             # Return success message if successful
             return {"message": action_result.message}
@@ -83,7 +76,7 @@ async def block_unblock_member(request: BlockUnblockRequest):
             raise HTTPException(status_code=400, detail="Invalid action. Must be 'block' or 'unblock'.")
         
         # Call the asynchronous function from DatabaseConnector to update member profile status
-        action_result = await db_company.block_unblock_member(organization_email, email, action)
+        action_result = await member_db.block_unblock_member(organization_email, email, action)
         
         # Check if operation was successful
         if action_result.status:
