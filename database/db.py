@@ -23,7 +23,7 @@ import secrets
 from datetime import datetime
 from models.member import MemberModel
 
-SECURITY_PASSWORD_SALT = secrets.token_hex(16)
+
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
@@ -581,8 +581,9 @@ class DatabaseConnector:
             verification_token = serializer.dumps({
                 "email": invite_data["user_email"],
                 "organization_email": invite_data["organization_email"],
+                "organization_name": invite_data["organization_name"],
                 "role": invite_data["role"]
-            }, salt=SECURITY_PASSWORD_SALT)
+            }, salt='invitation_salt')
 
             invite_data['verification_token'] = verification_token
             invite_data['sent_date'] = datetime.utcnow().isoformat()
@@ -649,7 +650,7 @@ class DatabaseConnector:
         smtp_username = 'devinsightlemon@gmail.com'
         smtp_password = 'fvgj qctg bvmq zkva'
 
-        verification_url = f"http://127.0.0.1:8000/verify-email?token={verification_token}"
+        verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}"
 
         sender_email = smtp_username
         receiver_email = email
