@@ -1,3 +1,5 @@
 ; praveenwal21:2z9hVJq5Zoa51aqr
 ; lahirupraveen43
 ; lJxCHnVv9bTIdtG2
+# EMAIL=chamoherath143@gmail.com
+# EMAIL_PASSWORD=bangtanbts
