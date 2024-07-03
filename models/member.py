@@ -15,3 +15,7 @@ class RoleUpdateRequest(BaseModel):
     last_name:str
     email: str
     new_role: str
+    
+    
+  
+    

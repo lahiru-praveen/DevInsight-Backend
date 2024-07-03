@@ -19,9 +19,10 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
-import secrets
+
 from datetime import datetime
 from models.member import MemberModel
+# from utilis.emailing import send_verification_email
 
 
 
@@ -334,9 +335,9 @@ class DatabaseConnector:
         except Exception as e:
             print(f"Failed to send verification email: {str(e)}")
 
-    # async def check_email_exists(self, email: str) -> bool:
-    #     company = await self.__collection.find_one({"admin_email": email})
-    #     return company is not None
+    async def check_email_exists(self, email: str) -> bool:
+        company = await self.__collection.find_one({"admin_email": email})
+        return company is not None
     async def check_email_exists(self, email: str) -> bool:
         try:
             company = await self.__collection.find_one({"admin_email": email})
@@ -572,6 +573,22 @@ class DatabaseConnector:
             print(e)
         finally:
             return action_result
+        
+    async def get_organization_name_by_email(self, adminEmail:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            reult = await self.__collection.find_one({"admin_email":adminEmail})
+            if reult is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                action_result.data = reult.get("company_name")
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result    
 
     async def send_invite(self, invite_data: dict) -> ActionResult:
         action_result = ActionResult(status=True)
@@ -601,7 +618,7 @@ class DatabaseConnector:
             action_result.message = "Failed to send invite"
             print(e)
         finally:
-            return action_result
+            return action_result  
 
 
     async def resend_invite(self, invite_id: str) -> ActionResult:
