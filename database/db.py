@@ -410,11 +410,12 @@ class DatabaseConnector:
             return action_result
 
     async def get_members_by_organization_email(self, organization_email: str) -> ActionResult:
+        print(organization_email)
         action_result = ActionResult(status=True)
 
         try:
-            query = {"organization_email": organization_email}
-            projection = {"first_name": 1, "last_name": 1, "email": 1, "role": 1, "profileStatus": 1}
+            query = {"companyEmail": organization_email}
+            projection = {"username": 1, "email": 1, "role": 1, "profileStatus": 1, "profilePicture": 1}
             cursor = self.__collection.find(query, projection)
 
             members = []
