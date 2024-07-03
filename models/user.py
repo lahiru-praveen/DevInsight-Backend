@@ -11,6 +11,7 @@ class User(BaseModel):
     companyEmail: str
     role: str
     skills: Optional[List[str]]
+    face_encoding: Optional[List[str]]
     profileStatus: str
 
 class User_login(BaseModel):

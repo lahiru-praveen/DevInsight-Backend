@@ -52,6 +52,7 @@ app.include_router(profile_router)
 app.include_router(profile_settings_router)
 
 app.include_router(organization_register_router)
+
 app.include_router(bio_metrics_router)
 
 
