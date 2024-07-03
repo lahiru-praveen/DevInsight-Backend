@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, FastAPI, Depends
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from database.db import DatabaseConnector
 from pydantic import BaseModel
 from models.action_result import ActionResult
+from config import config
 
 invite_main_router = APIRouter()
 
 db_company = DatabaseConnector("invites")
 
-
+serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
 
 from pydantic import BaseModel
 
@@ -16,6 +18,7 @@ class Invite(BaseModel):
     user_email: str
     role: str
     organization_email: str
+    organization_name: str
     invite_accepted : bool
 
 
@@ -39,7 +42,7 @@ async def send_invite(invite: Invite):
 @invite_main_router.post("/resend-invite/{invite_id}")
 async def resend_invite(invite_id: str):
     action_result = await db_company.resend_invite(invite_id)
-    if action_result.status:
+    if action_result.status:                                
         return {"message": action_result.message}
     else:
         raise HTTPException(status_code=404, detail=action_result.message)
@@ -51,3 +54,19 @@ async def delete_invite(invite_id: str):
         return {"message": action_result.message}
     else:
         raise HTTPException(status_code=404, detail=action_result.message)
+
+@invite_main_router.get("/get-invitation-details")
+async def get_invitation_details(token: str):
+    try:
+        data = serializer.loads(token, salt='invitation_salt', max_age=3600)
+        return {
+            "email": data["email"],
+            "organization_email": data["organization_email"],
+            "organization_name" : data["organization_name"],
+            "role": data["role"]
+        }
+    except SignatureExpired:
+        raise HTTPException(status_code=400, detail="Token expired")
+    except BadSignature:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    
