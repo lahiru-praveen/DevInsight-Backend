@@ -50,9 +50,11 @@ async def delete_invite(invite_id: str):
         raise HTTPException(status_code=404, detail=action_result.message)
 
 @invite_main_router.get("/get-invitation-details")
-async def get_invitation_details(token: str):
+async def get_invitation_details(token: str,):
+    
     try:
         data = serializer.loads(token, salt='invitation_salt', max_age=3600)
+        
         return {
             "email": data["email"],
             "organization_email": data["organization_email"],

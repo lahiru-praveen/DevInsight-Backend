@@ -274,3 +274,14 @@ async def login(organization: User_login):
         raise HTTPException(status_code=404, detail="Organization not found")
 
 
+@company_main_router.get("/get-organization-image")
+async def get_organization_image(organization_email:str):
+    try:
+        result = await db_company.get_organization_image_by_email(organization_email)   
+        if result.status:
+            return result.data
+        else:
+            raise HTTPException(status_code=500, detail=result.message)
+    except Exception as e:
+        print(f"Error in get organization name: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

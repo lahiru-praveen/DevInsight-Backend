@@ -3,7 +3,7 @@ import json
 from bson import ObjectId, json_util
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
-from pymongo import DESCENDING
+from pymongo import DESCENDING, ReturnDocument
 from pymongo.errors import ServerSelectionTimeoutError
 import motor.motor_asyncio
 from config import config
@@ -589,6 +589,21 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result    
+    async def get_organization_image_by_email(self, adminEmail:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            reult = await self.__collection.find_one({"admin_email":adminEmail})
+            if reult is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                action_result.data = reult.get("logo_url")
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result     
 
     async def send_invite(self, invite_data: dict) -> ActionResult:
         action_result = ActionResult(status=True)
@@ -659,6 +674,26 @@ class DatabaseConnector:
             print(e)
         finally:
             return action_result
+        
+    async def accept_invite(self, email: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            update_result = await self.__collection.find_one_and_update(
+                {"user_email": email},
+                {"$set": {"invite_accepted": True}},
+                return_document=ReturnDocument.AFTER
+            )
+            if update_result:
+                action_result.message = "Invite accepted successfully"
+            else:
+                action_result.status = False
+                action_result.message = "Invite not found or update failed"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+            print(e)
+        finally:
+            return action_result
 
     async def send_invitation_email(self, email: str, verification_token: str):
         # This method is for sending email verification, adjust it as per resend logic if needed
@@ -667,7 +702,8 @@ class DatabaseConnector:
         smtp_username = 'devinsightlemon@gmail.com'
         smtp_password = 'fvgj qctg bvmq zkva'
 
-        verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}"
+        # verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}"
+        verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}&email={email}"
 
         sender_email = smtp_username
         receiver_email = email
