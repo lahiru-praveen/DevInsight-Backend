@@ -11,4 +11,5 @@ class Configurations:
     SECRET_KEY = "teamlemon"
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 60
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
    

@@ -15,6 +15,8 @@ from routes.invite_main import invite_main_router
 from routes.user_request import request_router
 from routes.organization_register import organization_register_router
 from routes.bio_metrics import bio_metrics_router
+from routes.chat_bot import chat_bot_router
+
 app = FastAPI()
 
 # CORS middleware configuration
@@ -54,6 +56,7 @@ app.include_router(organization_register_router)
 
 app.include_router(bio_metrics_router)
 
+app.include_router(chat_bot_router)
 
 
 
