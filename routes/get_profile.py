@@ -1,6 +1,6 @@
 from fastapi import APIRouter,HTTPException, Depends
 from database.db import DatabaseConnector
-from models.email import EmailRequest
+from models.email import CheckEmail, EmailRequest
 from models.user import User, UserProfile
 import logging
 from utilis.profile import get_current_user, oauth2_scheme, generate_otp, send_email
@@ -15,6 +15,7 @@ async def get_user(email: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
 @profile_get_router.get("/api/profile")
 async def read_profile(current_user: dict = Depends(get_current_user)):
     return current_user
@@ -46,3 +47,10 @@ async def send_email_endpoint(email_request: EmailRequest):
     except Exception as e:
         logging.error(f"Error in send_email_endpoint: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+@profile_get_router.post("/api/check-email", response_model=dict)
+async def check_email(email: CheckEmail):
+    user_entity = await user_db.get_user_by_email(email.email)
+    if user_entity:
+        return {"detail": "User already exists"}
+    return {"detail": "Email does not exist"}
