@@ -38,8 +38,9 @@ async def update_member_role(role_update_request: RoleUpdateRequest):
         organization_email = role_update_request.organization_email
         email = role_update_request.email
         new_role = role_update_request.new_role
-        first_name = role_update_request.first_name
-        last_name = role_update_request.last_name
+        username = role_update_request.username
+        
+        
 
         # Call the asynchronous function from DatabaseConnector to update member role
         action_result = await member_db.update_member_role(organization_email, email, new_role)
@@ -47,7 +48,7 @@ async def update_member_role(role_update_request: RoleUpdateRequest):
         # Check if operation was successful
         if action_result.status:
             # Call the send_changerole_email function
-            await member_db.send_changerole_email(first_name, last_name, email, new_role)
+            await member_db.send_changerole_email(username, email, new_role)
 
             # Return success message if successful
             return {"message": action_result.message}
