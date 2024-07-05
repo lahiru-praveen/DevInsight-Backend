@@ -433,12 +433,12 @@ class DatabaseConnector:
         
     async def block_unblock_member(self, organization_email: str, email: str, action: str) -> ActionResult:
         try:
-            query = {"organization_email": organization_email, "email": email}
+            query = {"companyEmail": organization_email, "email": email}
             
             # Determine the new profile status based on the action
             new_status = None
             if action == 'block':
-                new_status = 'Blocked'
+                new_status = 'Suspend'
             elif action == 'unblock':
                 new_status = 'Active'
             
@@ -479,7 +479,7 @@ class DatabaseConnector:
 
     async def update_member_role(self, organization_email: str, email: str, new_role: str) -> ActionResult:
         try:
-            query = {"organization_email": organization_email, "email": email}
+            query = {"companyEmail": organization_email, "email": email}
             result = await self.__collection.update_one(query, {"$set": {"role": new_role}})
 
             if result.modified_count == 1:
@@ -490,7 +490,7 @@ class DatabaseConnector:
         except Exception as e:
             return ActionResult(status=False, message=f"Error occurred: {str(e)}")
 
-    async def send_changerole_email(self, first_name: str, last_name: str, email: str, new_role: str):
+    async def send_changerole_email(self, username: str, email: str, new_role: str):
         smtp_server = 'smtp.gmail.com'
         smtp_port = 587
         smtp_username = 'devinsightlemon@gmail.com'
@@ -507,7 +507,7 @@ class DatabaseConnector:
         body = f"""
         Hello,
 
-        Hello {first_name} {last_name} Your active role have been change to {new_role}.
+        Hello {username} Your active role have been change to {new_role}.
         
 
         Thank you,
