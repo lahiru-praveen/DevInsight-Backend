@@ -33,3 +33,5 @@ class UserProfile(BaseModel):
 class UpdateProfileStatusRequest(BaseModel):
     email: str
     profileStatus: str
+
+
