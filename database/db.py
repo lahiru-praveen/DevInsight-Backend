@@ -702,7 +702,7 @@ class DatabaseConnector:
         smtp_username = 'devinsightlemon@gmail.com'
         smtp_password = 'fvgj qctg bvmq zkva'
 
-        # verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}"
+        
         verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}&email={email}"
 
         sender_email = smtp_username
@@ -736,54 +736,7 @@ class DatabaseConnector:
 
 
 
-#     async def add_request(self, entity: BaseModel) -> ActionResult:
-#         action_result = ActionResult(status=True)
-#         try:
-#             get_next_request_id_pipeline = [
-#                 {
-#                     "$group": {
-#                         "_id": None,
-#                         "next_request_id": {"$max": "$request_id"}
-#                     }
-#                 },
-#                 {
-#                     "$project": {
-#                         "next_request_id": {"$ifNull": [{"$add": ["$next_request_id", 1]}, 1]}
-#                     }
-#                 }
-#             ]
-#             next_id_cursor = self.__collection.aggregate(get_next_request_id_pipeline)
-#             next_id_doc = await next_id_cursor.to_list(length=1)
-#             next_request_id = next_id_doc[0]['next_request_id'] if next_id_doc else 1
-#
-#             entity_dict = entity.dict(by_alias=True, exclude={"id"})
-#             entity_dict['request_id'] = next_request_id
-#
-#             result = await self.__collection.insert_one(entity_dict)
-#             action_result.data = str(result.inserted_id)
-#             action_result.message = TextMessages.INSERT_SUCCESS
-#         except Exception as e:
-#             action_result.status = False
-#             action_result.message = str(e)
-#         finally:
-#             return action_result
-#
-#     async def get_request_by_id(self, entity_id: int) -> ActionResult:
-#         action_result = ActionResult(status=True)
-#         try:
-#             entity = await self.__collection.find_one({"p_id": entity_id})
-#             if entity is None:
-#                 action_result.message = TextMessages.NOT_FOUND
-#                 action_result.status = False
-#             else:
-#                 json_data = json.loads(json_util.dumps(entity))
-#                 action_result.data = json_data
-#                 action_result.message = TextMessages.FOUND
-#         except Exception as e:
-#             action_result.status = False
-#             action_result.message = TextMessages.ACTION_FAILED
-#         finally:
-#             return action_result
+
 
     async def add_request(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
