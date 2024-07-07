@@ -1,8 +1,3 @@
-# from pydantic import BaseModel
-#
-# class RequestItem(BaseModel):
-#     requestText: str
-
 from pydantic import BaseModel,Field
 
 class RequestItem(BaseModel):
