@@ -19,10 +19,9 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
-
 from datetime import datetime
 from models.member import MemberModel
-# from utilis.emailing import send_verification_email
+from models.request_data import RequestItem
 
 
 
@@ -246,7 +245,7 @@ class DatabaseConnector:
             action_result.message = "Failed to delete company record."
             print(e)
         finally:
-            return action_result    
+            return action_result
 
 
     async def send_verification_email(self, email: str, verification_token: str):
@@ -430,29 +429,28 @@ class DatabaseConnector:
             action_result.message = f"Error occurred: {str(e)}"
         finally:
             return action_result
-        
+
     async def block_unblock_member(self, organization_email: str, email: str, action: str) -> ActionResult:
         try:
             query = {"companyEmail": organization_email, "email": email}
-            
             # Determine the new profile status based on the action
             new_status = None
             if action == 'block':
                 new_status = 'Suspend'
             elif action == 'unblock':
                 new_status = 'Active'
-            
+
             # Update the profileStatus in the database
             result = await self.__collection.update_one(query, {"$set": {"profileStatus": new_status}})
-            
+
             if result.modified_count == 1:
                 return ActionResult(status=True, message=f"Member {email} {action}ed successfully")
             else:
                 return ActionResult(status=False, message=f"Failed to {action} member or no changes made")
-        
+
         except Exception as e:
-            return ActionResult(status=False, message=f"Error occurred: {str(e)}")    
-        
+            return ActionResult(status=False, message=f"Error occurred: {str(e)}")
+
     async def get_organizations_with_custom_domain(self) -> ActionResult:
         action_result = ActionResult(status=True)
 
@@ -475,7 +473,7 @@ class DatabaseConnector:
             action_result.status = False
             action_result.message = f"Error occurred: {str(e)}"
         finally:
-            return action_result   
+            return action_result
 
     async def update_member_role(self, organization_email: str, email: str, new_role: str) -> ActionResult:
         try:
@@ -736,8 +734,6 @@ class DatabaseConnector:
 
 
 
-
-
     async def add_request(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
@@ -769,6 +765,11 @@ class DatabaseConnector:
             action_result.message = str(e)
         finally:
             return action_result
+
+    async def get_all_requests(self) -> list[RequestItem]:
+        documents = self.collection.find({})
+        responses = [RequestItem(**doc) for doc in documents]
+        return responses
 
     async def get_request_by_id(self, entity_id: int) -> ActionResult:
         action_result = ActionResult(status=True)
