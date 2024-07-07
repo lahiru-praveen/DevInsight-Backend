@@ -14,8 +14,10 @@ from routes.manage_portal import manage_portal_router
 from routes.invite_main import invite_main_router
 from routes.user_request import request_router
 from routes.organization_register import organization_register_router
+from routes.request_display import retrieval_router
 from routes.bio_metrics import bio_metrics_router
 from routes.chat_bot import chat_bot_router
+
 
 app = FastAPI()
 
@@ -41,6 +43,8 @@ app.include_router(down_pdf_router)
 app.include_router(company_main_router)
 
 app.include_router(request_router)
+
+app.include_router(retrieval_router)
 
 app.include_router(manage_portal_router)
 
