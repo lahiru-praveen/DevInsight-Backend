@@ -22,7 +22,7 @@ from itsdangerous import URLSafeTimedSerializer
 import secrets
 from datetime import datetime
 from models.member import MemberModel
-
+from models.request_data import RequestItem
 
 
 class DatabaseConnector:
@@ -724,21 +724,10 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_code_data(self, project_id: int) -> ActionResult:
-        action_result = ActionResult(status=True)
-        try:
-            entity = await self.__collection.find_one({"p_id": project_id})
-            if entity is None:
-                action_result.message = "Project details not found"
-                action_result.status = False
-            else:
-                json_data = json.loads(json_util.dumps(entity))
-                action_result.data = CodeContextData(**json_data)
-                action_result.message = "Project details found"
-        except Exception as e:
-            action_result.status = False
-            action_result.message = str(e)
-        return action_result
+    async def get_all_requests(self) -> list[RequestItem]:
+        documents = self.collection.find({})
+        responses = [RequestItem(**doc) for doc in documents]
+        return responses
 
     async def get_request_by_id(self, entity_id: int) -> ActionResult:
         action_result = ActionResult(status=True)

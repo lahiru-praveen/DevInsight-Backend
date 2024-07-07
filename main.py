@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.company_main import company_main_router
-# from routes.download_pdf import down_pdf_router
+from routes.download_pdf import down_pdf_router
 from routes.file_handling import file_router
 from routes.get_profile import profile_get_router
 from routes.interact_llm import llm_router
@@ -14,7 +14,8 @@ from routes.manage_portal import manage_portal_router
 from routes.invite_main import invite_main_router
 from routes.user_request import request_router
 from routes.organization_register import organization_register_router
-from routes.bio_metrics import bio_metrics_router
+# from routes.bio_metrics import bio_metrics_router
+from routes.request_display import retrieval_router
 app = FastAPI()
 
 # CORS middleware configuration
@@ -34,11 +35,13 @@ app.include_router(lan_check_router)
 
 app.include_router(submission_router)
 
-# app.include_router(down_pdf_router)
+app.include_router(down_pdf_router)
 
 app.include_router(company_main_router)
 
 app.include_router(request_router)
+
+app.include_router(retrieval_router)
 
 app.include_router(manage_portal_router)
 
@@ -52,7 +55,7 @@ app.include_router(profile_settings_router)
 
 app.include_router(organization_register_router)
 
-app.include_router(bio_metrics_router)
+# app.include_router(bio_metrics_router)
 
 
 
