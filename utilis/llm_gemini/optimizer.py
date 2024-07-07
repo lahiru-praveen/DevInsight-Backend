@@ -1,8 +1,8 @@
-from utilis.llm.chain import chain1,chain2,chain3
-from utilis.llm.prompts import create_cohesive_prompt
+from utilis.llm_gemini.chain import chain1,chain2,chain3
+from utilis.llm_gemini.prompts import create_cohesive_prompt
 
 
-class CodeReviewLLM:
+class CodeReviewByGemini:
     @staticmethod
     def get_review(chunk_input, language1, description1):
         # Set the main language

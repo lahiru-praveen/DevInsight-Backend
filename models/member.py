@@ -11,7 +11,10 @@ class MemberModel(BaseModel):
 
 class RoleUpdateRequest(BaseModel):
     organization_email: str
-    first_name:str
-    last_name:str
     email: str
     new_role: str
+    username: str
+    
+    
+  
+    

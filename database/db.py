@@ -3,7 +3,7 @@ import json
 from bson import ObjectId, json_util
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
-from pymongo import DESCENDING
+from pymongo import DESCENDING, ReturnDocument
 from pymongo.errors import ServerSelectionTimeoutError
 import motor.motor_asyncio
 from config import config
@@ -19,10 +19,10 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
-import secrets
 from datetime import datetime
 from models.member import MemberModel
 from models.request_data import RequestItem
+
 
 
 class DatabaseConnector:
@@ -34,8 +34,8 @@ class DatabaseConnector:
             self.__client.server_info()
             self.__database = self.__client.get_database(self.__database_name)
             self.__collection = self.__database.get_collection(collection_name)
-            self.__delete_collection1 = self.__database.get_collection("delete_code_records")
-            self.__delete_collection2 = self.__database.get_collection("delete_review_records")
+            self.__delete_collection_code = self.__database.get_collection("delete_code_records")
+            self.__delete_collection_review = self.__database.get_collection("delete_review_records")
         except ServerSelectionTimeoutError as e:
             raise Exception("Database connection timed out", e)
 
@@ -140,7 +140,7 @@ class DatabaseConnector:
                 delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
                 if delete_result.deleted_count == 1:
                     document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection1.insert_one(document)
+                    await self.__delete_collection_code.insert_one(document)
                     action_result.message = TextMessages.DELETE_SUCCESS
                 else:
                     action_result.status = False
@@ -164,7 +164,7 @@ class DatabaseConnector:
                 delete_result = await self.__collection.delete_one({"p_id": entity_id, "user": user})
                 if delete_result.deleted_count == 1:
                     document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
-                    await self.__delete_collection2.insert_one(document)
+                    await self.__delete_collection_review.insert_one(document)
                     action_result.message = TextMessages.DELETE_SUCCESS
                 else:
                     action_result.status = False
@@ -334,9 +334,9 @@ class DatabaseConnector:
         except Exception as e:
             print(f"Failed to send verification email: {str(e)}")
 
-    # async def check_email_exists(self, email: str) -> bool:
-    #     company = await self.__collection.find_one({"admin_email": email})
-    #     return company is not None
+    async def check_email_exists(self, email: str) -> bool:
+        company = await self.__collection.find_one({"admin_email": email})
+        return company is not None
     async def check_email_exists(self, email: str) -> bool:
         try:
             company = await self.__collection.find_one({"admin_email": email})
@@ -432,12 +432,11 @@ class DatabaseConnector:
 
     async def block_unblock_member(self, organization_email: str, email: str, action: str) -> ActionResult:
         try:
-            query = {"organization_email": organization_email, "email": email}
-
+            query = {"companyEmail": organization_email, "email": email}
             # Determine the new profile status based on the action
             new_status = None
             if action == 'block':
-                new_status = 'Blocked'
+                new_status = 'Suspend'
             elif action == 'unblock':
                 new_status = 'Active'
 
@@ -478,7 +477,7 @@ class DatabaseConnector:
 
     async def update_member_role(self, organization_email: str, email: str, new_role: str) -> ActionResult:
         try:
-            query = {"organization_email": organization_email, "email": email}
+            query = {"companyEmail": organization_email, "email": email}
             result = await self.__collection.update_one(query, {"$set": {"role": new_role}})
 
             if result.modified_count == 1:
@@ -489,7 +488,7 @@ class DatabaseConnector:
         except Exception as e:
             return ActionResult(status=False, message=f"Error occurred: {str(e)}")
 
-    async def send_changerole_email(self, first_name: str, last_name: str, email: str, new_role: str):
+    async def send_changerole_email(self, username: str, email: str, new_role: str):
         smtp_server = 'smtp.gmail.com'
         smtp_port = 587
         smtp_username = 'devinsightlemon@gmail.com'
@@ -506,8 +505,8 @@ class DatabaseConnector:
         body = f"""
         Hello,
 
-        Hello {first_name} {last_name} Your active role have been change to {new_role}.
-
+        Hello {username} Your active role have been change to {new_role}.
+        
 
         Thank you,
         Devinsight Team
@@ -572,6 +571,37 @@ class DatabaseConnector:
             print(e)
         finally:
             return action_result
+        
+    async def get_organization_name_by_email(self, adminEmail:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            reult = await self.__collection.find_one({"admin_email":adminEmail})
+            if reult is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                action_result.data = reult.get("company_name")
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result    
+    async def get_organization_image_by_email(self, adminEmail:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            reult = await self.__collection.find_one({"admin_email":adminEmail})
+            if reult is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                action_result.data = reult.get("logo_url")
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result     
 
     async def send_invite(self, invite_data: dict) -> ActionResult:
         action_result = ActionResult(status=True)
@@ -601,7 +631,7 @@ class DatabaseConnector:
             action_result.message = "Failed to send invite"
             print(e)
         finally:
-            return action_result
+            return action_result  
 
 
     async def resend_invite(self, invite_id: str) -> ActionResult:
@@ -642,55 +672,67 @@ class DatabaseConnector:
             print(e)
         finally:
             return action_result
+        
+    async def accept_invite(self, email: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            update_result = await self.__collection.find_one_and_update(
+                {"user_email": email},
+                {"$set": {"invite_accepted": True}},
+                return_document=ReturnDocument.AFTER
+            )
+            if update_result:
+                action_result.message = "Invite accepted successfully"
+            else:
+                action_result.status = False
+                action_result.message = "Invite not found or update failed"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = f"Error occurred: {str(e)}"
+            print(e)
+        finally:
+            return action_result
 
-#     async def add_request(self, entity: BaseModel) -> ActionResult:
-#         action_result = ActionResult(status=True)
-#         try:
-#             get_next_request_id_pipeline = [
-#                 {
-#                     "$group": {
-#                         "_id": None,
-#                         "next_request_id": {"$max": "$request_id"}
-#                     }
-#                 },
-#                 {
-#                     "$project": {
-#                         "next_request_id": {"$ifNull": [{"$add": ["$next_request_id", 1]}, 1]}
-#                     }
-#                 }
-#             ]
-#             next_id_cursor = self.__collection.aggregate(get_next_request_id_pipeline)
-#             next_id_doc = await next_id_cursor.to_list(length=1)
-#             next_request_id = next_id_doc[0]['next_request_id'] if next_id_doc else 1
-#
-#             entity_dict = entity.dict(by_alias=True, exclude={"id"})
-#             entity_dict['request_id'] = next_request_id
-#
-#             result = await self.__collection.insert_one(entity_dict)
-#             action_result.data = str(result.inserted_id)
-#             action_result.message = TextMessages.INSERT_SUCCESS
-#         except Exception as e:
-#             action_result.status = False
-#             action_result.message = str(e)
-#         finally:
-#             return action_result
-#
-#     async def get_request_by_id(self, entity_id: int) -> ActionResult:
-#         action_result = ActionResult(status=True)
-#         try:
-#             entity = await self.__collection.find_one({"p_id": entity_id})
-#             if entity is None:
-#                 action_result.message = TextMessages.NOT_FOUND
-#                 action_result.status = False
-#             else:
-#                 json_data = json.loads(json_util.dumps(entity))
-#                 action_result.data = json_data
-#                 action_result.message = TextMessages.FOUND
-#         except Exception as e:
-#             action_result.status = False
-#             action_result.message = TextMessages.ACTION_FAILED
-#         finally:
-#             return action_result
+    async def send_invitation_email(self, email: str, verification_token: str):
+        # This method is for sending email verification, adjust it as per resend logic if needed
+        smtp_server = 'smtp.gmail.com'
+        smtp_port = 587
+        smtp_username = 'devinsightlemon@gmail.com'
+        smtp_password = 'fvgj qctg bvmq zkva'
+
+        
+        verification_url = f"http://localhost:5173/SignUpInvite?token={verification_token}&email={email}"
+
+        sender_email = smtp_username
+        receiver_email = email
+        message = MIMEMultipart()
+        message['From'] = sender_email
+        message['To'] = receiver_email
+        message['Subject'] = 'Verify Your Email'
+
+        body = f"""
+        Hello,
+
+        Please click the following link to verify your email:
+        {verification_url}
+
+        Thank you,
+        Your Company Team
+        """
+        message.attach(MIMEText(body, 'plain'))
+
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_username, smtp_password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+            print(f"Verification email sent to {receiver_email}")
+        except Exception as e:
+            print(f"Failed to send verification email: {str(e)}")
+        finally:
+            return 0
+
+
 
     async def add_request(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)

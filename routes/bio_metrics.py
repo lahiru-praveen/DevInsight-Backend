@@ -1,12 +1,13 @@
 import os
 from pydantic import EmailStr
-from fastapi import APIRouter, HTTPException, Form, UploadFile, File
+from fastapi import APIRouter, HTTPException, Form, UploadFile, File, Body
 import shutil
 import config.config
 from database.db import DatabaseConnector
 import face_recognition
 from fastapi.responses import JSONResponse
 from datetime import timedelta
+import numpy as np
 
 from utilis.profile import create_access_token
 
@@ -66,21 +67,53 @@ async def login_face(file: UploadFile = File(...)):
 
     users = await user_db.login_face()
     for user in users:
-        registered_face_encoding = user['face_encoding']
-        matches = face_recognition.compare_faces([registered_face_encoding], input_face_encoding)
+        registered_face_encoding = np.array(user['face_encoding'])
+        if registered_face_encoding.shape == input_face_encoding.shape:
+            matches = face_recognition.compare_faces([registered_face_encoding], input_face_encoding)
 
-        if matches[0]:
-            access_token_expires = timedelta(minutes=config.config.Configurations.ACCESS_TOKEN_EXPIRE_MINUTES)
-            access_token = create_access_token(
+            if matches[0]:
+                access_token_expires = timedelta(minutes=config.config.Configurations.ACCESS_TOKEN_EXPIRE_MINUTES)
+                access_token = create_access_token(
                 data={"email": user["email"]}, expires_delta=access_token_expires
             )
 
-            user_data = {
-                "access_token": access_token,
-                # "token_type": "bearer",
-                "email": user["email"],
-                "password": user["password"]  # Assuming you need this for frontend
-            }
-            return JSONResponse(content={"message": "Login successful", "user": user_data})
+                user_data = {
+                            "access_token": access_token,
+                            # "token_type": "bearer",
+                            "email": user["email"],
+                            "password": user["password"] 
+                }
+                return JSONResponse(content={"message": "Login successful", "user": user_data})
 
     raise HTTPException(status_code=401, detail="Face not recognized.")
+
+
+@bio_metrics_router.post("/remove_face_data")
+async def remove_face_data(email: EmailStr = Body(...)):
+    # Fetch the user from the database
+    user = await user_db.get_user_by_email(email)
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get the image path
+    image_path = user.get("image_path")
+    
+    if not image_path:
+        raise HTTPException(status_code=400, detail="No face data found for this user")
+
+    # Remove the image file
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    else:
+        raise HTTPException(status_code=404, detail="Face image not found on the server")
+
+    # Update the database
+    user_data = {
+        "face_encoding": None,
+        "image_path": None
+    }
+
+    await user_db.update_register_face(email, user_data)
+
+    return JSONResponse(content={"message": "Face data removed successfully"})
