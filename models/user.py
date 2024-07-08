@@ -25,6 +25,7 @@ class UserProfile(BaseModel):
     username: str
     email: str
     company: str
+    companyEmail: str
     role: str
     profileStatus: str
     skills: Optional[List[str]]
