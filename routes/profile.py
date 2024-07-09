@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from database.db import DatabaseConnector
-from models.user import User, User_login
+from models.user import User, User_login, UserSkills
 import logging
 from utilis.profile import create_access_token, verify_password, get_current_user, oauth2_scheme
 from datetime import timedelta
@@ -11,6 +11,7 @@ from utilis.profile import hash_password
 profile_router = APIRouter()
 user_db = DatabaseConnector("user")
 user_db = DatabaseConnector("user")
+skill_db = DatabaseConnector("user-skills")
 
 
 @profile_router.post("/signup")
@@ -27,6 +28,17 @@ async def signup(user: User):
 
         # Add the user profile to the database
         await user_db.add_user_profile(user)
+        
+        additional_data = UserSkills(
+            profileStatus=user.profileStatus,
+            role=user.role,
+            email=user.email,
+            companyEmail=user.companyEmail
+        )
+        
+        
+        await skill_db.add_user_skills(additional_data)
+
 
         # Create an access token
         access_token_expires = timedelta(minutes=config.Configurations.ACCESS_TOKEN_EXPIRE_MINUTES)

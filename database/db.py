@@ -803,8 +803,12 @@ class DatabaseConnector:
         return entity
 
     async def add_user_profile(self, entity: BaseModel):
-        entity_dict = entity.dict(by_alias=True, exclude={"id"})
+        entity_dict = entity.model_dump(by_alias=True, exclude={"id"})
         await self.__collection.insert_one(entity_dict)
+    async def add_user_skills(self, entity: BaseModel):
+        entity_dict = entity.model_dump(by_alias=True, exclude={"id"})
+        await self.__collection.insert_one(entity_dict)
+    
 
     async def authenticate_user(self, email: str, password: str):
         from utilis.profile import verify_password
@@ -845,6 +849,9 @@ class DatabaseConnector:
 
     async def update_password(self, email: str, password: str):
         await self.__collection.update_one({"email": email}, {"$set": {"password": password}})
+    
+    async def update_password_organizaiton(self, email: str, password: str):
+        await self.__collection.update_one({"admin_email": email}, {"$set": {"hash_password": password}})
 
     async def save_verification_code(self, entity: BaseModel):
         await self.__collection.update_one(
