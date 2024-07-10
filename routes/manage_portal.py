@@ -82,7 +82,7 @@ async def block_unblock_member(request: BlockUnblockRequest):
         action_result2 = await skill_db.block_unblock_member(organization_email, email, action)
         
        
-        if action_result.status and action_result2.status:
+        if action_result.status == action_result2.status:
           
             return {"message": action_result.message}
         else:
