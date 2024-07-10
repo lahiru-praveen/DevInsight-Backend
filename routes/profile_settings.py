@@ -10,6 +10,8 @@ from utilis.profile import verify_password_reset, hash_password, verify_password
 profile_settings_router = APIRouter()
 user_db = DatabaseConnector("user")
 verify_db = DatabaseConnector("verify-code")
+organization_db = DatabaseConnector("company")
+
 
 @profile_settings_router.put("/api/update_profile_status")
 async def update_profile_status(profile_data: dict):
@@ -39,6 +41,17 @@ async def change_password(email: str = Body(...), code: str = Body(...), new_pas
         return {"message": "Password changed successfully"}
     else:
         raise HTTPException(status_code=400, detail="Invalid email or verification code")
+    
+@profile_settings_router.post("/api/change-password-organization")
+async def change_password(email: str = Body(...), code: str = Body(...), new_password: str = Body(...)):
+    # Verify the email and verification code
+    if verify_password_reset(email, code):
+        # Update the user's password in the database
+        hashed_password = hash_password(new_password)
+        await organization_db.update_password_organizaiton(email, hashed_password)
+        return {"message": "Password changed successfully"}
+    else:
+        raise HTTPException(status_code=400, detail="Invalid email or verification code")    
 
 @profile_settings_router.post("/api/change-password-settings")
 async def change_password(email: str = Body(...), new_password: str = Body(...)):

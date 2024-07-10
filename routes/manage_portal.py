@@ -9,6 +9,8 @@ from models.member import RoleUpdateRequest
 # Initialize FastAPI router
 manage_portal_router = APIRouter()
 member_db = DatabaseConnector("user")
+skill_db = DatabaseConnector("user-skills")
+
 
 
 
@@ -42,9 +44,10 @@ async def update_member_role(role_update_request: RoleUpdateRequest):
 
         
         action_result = await member_db.update_member_role(organization_email, email, new_role)
+        action_result2 = await skill_db.update_member_role(organization_email, email, new_role)
 
         
-        if action_result.status:
+        if action_result.status and action_result2.status:
             
             await member_db.send_changerole_email(username, email, new_role)
 
@@ -76,9 +79,10 @@ async def block_unblock_member(request: BlockUnblockRequest):
         
         # Call the asynchronous function from DatabaseConnector to update member profile status
         action_result = await member_db.block_unblock_member(organization_email, email, action)
+        action_result2 = await skill_db.block_unblock_member(organization_email, email, action)
         
        
-        if action_result.status:
+        if action_result.status and action_result2.status:
           
             return {"message": action_result.message}
         else:

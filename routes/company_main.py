@@ -154,3 +154,5 @@ async def get_organization_image(organization_email:str):
     except Exception as e:
         print(f"Error in get organization name: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
