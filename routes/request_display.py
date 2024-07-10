@@ -8,16 +8,18 @@ retrieval_router = APIRouter()
 
 request_db = DatabaseConnector("request")
 
-@retrieval_router.get("/responses", response_model=List[RequestItem])
-async def get_responses():
-    try:
-        # Retrieve data from MongoDB
-        responses = await request_db.get_all_requests()
+@retrieval_router.get("/pre-responses")
+async def get_all_requests(user: str = None):
+    if user is None:
+        raise HTTPException(status_code=422, detail="Missing query parameter: user")
 
-        if responses:
-            return responses
+    try:
+        result = await request_db.get_all_codes(user)
+        if result.status:
+            return result.data  # Return the list of documents as JSON
         else:
-            raise HTTPException(status_code=404, detail="No responses found")
+            raise HTTPException(status_code=500, detail=result.message)
     except Exception as e:
-        print(f"Error in get_responses: {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while retrieving the responses")
+        print(f"Error in get_all_requests: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

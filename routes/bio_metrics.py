@@ -88,8 +88,8 @@ async def login_face(file: UploadFile = File(...)):
     raise HTTPException(status_code=401, detail="Face not recognized.")
 
 
-@bio_metrics_router.post("/remove_face_data")
-async def remove_face_data(email: EmailStr = Body(...)):
+@bio_metrics_router.post("/api/remove_face_data")
+async def remove_face_data(email: EmailStr):
     # Fetch the user from the database
     user = await user_db.get_user_by_email(email)
     
