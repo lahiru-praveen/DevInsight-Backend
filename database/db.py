@@ -737,25 +737,36 @@ class DatabaseConnector:
     async def add_request(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-            get_next_request_id_pipeline = [
-                {
-                    "$group": {
-                        "_id": None,
-                        "next_request_id": {"$max": "$request_id"}
-                    }
-                },
-                {
-                    "$project": {
-                        "next_request_id": {"$ifNull": [{"$add": ["$next_request_id", 1]}, 1]}
-                    }
-                }
-            ]
+           get_next_request_id_pipeline = [
+               {
+                   "$match": {
+                       "user": entity.user,
+                       "p_id": entity.p_id
+                   }
+               },
+               {
+                   "$group": {
+                       "_id": None,
+                       "next_request_id": {"$max": "$request_id"}
+                   }
+               },
+               {
+                   "$project": {
+                       "next_request_id": {
+                           "$ifNull": [
+                               {"$add": ["$next_request_id", 1]},
+                               1
+                           ]
+                       }
+                   }
+               }
+           ]
             next_id_cursor = self.__collection.aggregate(get_next_request_id_pipeline)
             next_id_doc = await next_id_cursor.to_list(length=1)
             next_request_id = next_id_doc[0]['next_request_id'] if next_id_doc else 1
 
             entity_dict = entity.dict(by_alias=True, exclude={"id"})
-            entity_dict['request_id'] = next_request_id
+            entity_dict['r_id'] = next_request_id
 
             result = await self.__collection.insert_one(entity_dict)
             action_result.data = str(result.inserted_id)
