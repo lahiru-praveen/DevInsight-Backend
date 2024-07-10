@@ -732,35 +732,34 @@ class DatabaseConnector:
         finally:
             return 0
 
-
-
     async def add_request(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-           get_next_request_id_pipeline = [
-               {
-                   "$match": {
-                       "user": entity.user,
-                       "p_id": entity.p_id
-                   }
-               },
-               {
-                   "$group": {
-                       "_id": None,
-                       "next_request_id": {"$max": "$request_id"}
-                   }
-               },
-               {
-                   "$project": {
-                       "next_request_id": {
-                           "$ifNull": [
-                               {"$add": ["$next_request_id", 1]},
-                               1
-                           ]
-                       }
-                   }
-               }
-           ]
+            get_next_request_id_pipeline = [
+                {
+                    "$match": {
+                        "user": entity.user,
+                        "p_id": entity.p_id
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "next_request_id": {"$max": "$request_id"}
+                    }
+                },
+                {
+                    "$project": {
+                        "next_request_id": {
+                            "$ifNull": [
+                                {"$add": ["$next_request_id", 1]},
+                                1
+                            ]
+                        }
+                    }
+                }
+            ]
+
             next_id_cursor = self.__collection.aggregate(get_next_request_id_pipeline)
             next_id_doc = await next_id_cursor.to_list(length=1)
             next_request_id = next_id_doc[0]['next_request_id'] if next_id_doc else 1
@@ -774,6 +773,28 @@ class DatabaseConnector:
         except Exception as e:
             action_result.status = False
             action_result.message = str(e)
+        finally:
+            return action_result
+
+    async def delete_request(self, p_id: int, user: str, r_id:int) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            document = await self.__collection.find_one({"p_id": p_id, "user": user, "r_id": r_id})
+            if document:
+                delete_result = await self.__collection.delete_one({"p_id": p_id, "user": user})
+                if delete_result.deleted_count == 1:
+                    document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
+                    action_result.message = TextMessages.DELETE_SUCCESS
+                else:
+                    action_result.status = False
+                    action_result.message = TextMessages.ACTION_FAILED
+            else:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)  # Capture the exact error message
+            print(f"Error deleting code: {e}")
         finally:
             return action_result
 
@@ -811,6 +832,23 @@ class DatabaseConnector:
         except Exception as e:
             action_result.status = False
             action_result.message = "Action failed"
+        finally:
+            return action_result
+
+    async def get_response_by_id(self, p_id: int, user:str, r_id) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            entity = await self.__collection.find_one({"p_id": p_id, "user":user, 'r_id':r_id})
+            if entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                json_data = json.loads(json_util.dumps(entity))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
 
