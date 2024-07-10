@@ -1,34 +1,19 @@
-# # from pydantic import BaseModel
-# #
-# # class RequestItem(BaseModel):
-# #     requestText: str
-#
-# # from pydantic import BaseModel,Field
-# #
-# # class RequestItem(BaseModel):
-# #
-# #     projectID: int
-# #     projectName: str
-# #     fileName:str
-# #     language: str
-# #     description: str
-# #     code: str
-# #     review: str
-# #     mode: object
-# #     subjectText: str
-# #     requestText: str
-from pydantic import BaseModel, Field
+from datetime import date
+from typing import Optional
+from pydantic import BaseModel, Field, BeforeValidator
+from typing_extensions import Annotated
 
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class RequestItem(BaseModel):
-#     projectID: int = Field(...)
-    projectName: str = Field(...)
-    fileName: str = Field(...)
-#     language: str = Field(...)
-#     description: str = Field(...)
-#     mode: str = Field(...)
-    code: str = Field(...)
-    review: str = Field(...)
-    subjectText: str = Field(...)
-    requestText: str = Field(...)
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    user : str = Field(...)
+    p_id : int = Field(...)
+    p_name: str = Field(...)
+    r_id : int = Field(...)
+    r_subject : str = Field(...)
+    r_content : str = Field(...)
+    qae : str = Field(...)
+    r_status : str = Field(...)
+    date :  str = str(date.today().strftime("%Y-%m-%d"))
 
