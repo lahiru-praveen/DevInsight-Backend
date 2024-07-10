@@ -52,7 +52,7 @@ app.include_router(invite_main_router)
 
 app.include_router(profile_get_router)
 
-app.include_router(profile_router)
+app.include_router(profile_router, tags=["chamoda"])
 
 app.include_router(profile_settings_router)
 
