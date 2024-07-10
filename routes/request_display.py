@@ -12,9 +12,9 @@ request_db = DatabaseConnector("request")
 async def get_all_requests(user: str = None):
     if user is None:
         raise HTTPException(status_code=422, detail="Missing query parameter: user")
-
     try:
-        result = await request_db.get_all_codes(user)
+        result = await request_db.get_all_requests(user)
+        print(result)
         if result.status:
             return result.data  # Return the list of documents as JSON
         else:

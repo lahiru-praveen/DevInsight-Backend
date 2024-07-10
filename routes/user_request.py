@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models.request_data import RequestItem  # Ensure you have this model defined in models/request_data.py
+from models.request_data import RequestItem
 from database.db import DatabaseConnector
 from models.action_result import ActionResult
 

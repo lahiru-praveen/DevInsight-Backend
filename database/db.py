@@ -766,10 +766,25 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_all_requests(self) -> list[RequestItem]:
-        documents = self.collection.find({})
-        responses = [RequestItem(**doc) for doc in documents]
-        return responses
+    async def get_all_requests(self, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            documents = []
+            async for document in self.__collection.find({"user": user}):
+                if 'p_id' in document and document['p_id'] is not None:
+                    json_doc = json.loads(json_util.dumps(document))
+                    try:
+                        documents.append(RequestItem(**json_doc))
+                    except ValidationError as validation_error:
+                        print(f"Validation error for document {document['_id']}: {validation_error}")
+                else:
+                    print(f"Document missing required field 'p_id': {document}")
+            action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+        finally:
+            return action_result
 
     async def get_request_by_id(self, entity_id: int) -> ActionResult:
         action_result = ActionResult(status=True)
