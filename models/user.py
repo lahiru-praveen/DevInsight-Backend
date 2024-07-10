@@ -9,6 +9,8 @@ class User(BaseModel):
     password: str
     company: str
     companyEmail: str
+    experience: int
+    level: Optional[str]
     role: str
     skills: Optional[List[str]]
     face_encoding: Optional[List[str]]
@@ -26,6 +28,8 @@ class UserProfile(BaseModel):
     email: str
     company: str
     companyEmail: str
+    experience: Optional[int]
+    level: Optional[str]
     role: str
     profileStatus: str
     skills: Optional[List[str]]
