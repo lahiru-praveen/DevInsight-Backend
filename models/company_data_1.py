@@ -13,5 +13,5 @@ class CreateCompanyModel(BaseModel):
     has_custom_domain: bool
     domain: str
     password: str
-    logo_url: str
+    logo_url: str 
     email_verification_token: str = None

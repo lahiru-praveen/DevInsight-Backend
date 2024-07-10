@@ -14,7 +14,7 @@ import motor.motor_asyncio
 from fastapi.staticfiles import StaticFiles
 from datetime import timedelta
 import os
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from models.user import User_login
 from utilis.profile import verify_password, create_access_token
@@ -44,6 +44,21 @@ async def post_company(record: CreateCompanyModel):
     else:
         raise HTTPException(status_code=400, detail=action_result1.message)
 
+# @company_main_router.get("/verify-email")
+# async def verify_email(token: str):
+#     try:
+#         serializer = URLSafeTimedSerializer(config.Configurations.secret_key)
+#         email = serializer.loads(token, salt='email-confirm-salt', max_age=3600)
+
+#         result = await db_company.update_email_verification(email)
+#         if result.status:
+#             return {"message": "Email verified successfully"}
+#         else:
+#             await db_company.delete_company_by_email(email)
+#             raise HTTPException(status_code=400, detail=result.message)
+#     except (SignatureExpired, BadSignature):
+#         await db_company.delete_company_by_email(email)
+#         raise HTTPException(status_code=400, detail="Invalid or expired token")
 @company_main_router.get("/verify-email")
 async def verify_email(token: str):
     try:
@@ -52,13 +67,13 @@ async def verify_email(token: str):
 
         result = await db_company.update_email_verification(email)
         if result.status:
-            return {"message": "Email verified successfully"}
+            return RedirectResponse(url="http://localhost:5173/successpage", status_code=302)
         else:
             await db_company.delete_company_by_email(email)
-            raise HTTPException(status_code=400, detail=result.message)
+            return RedirectResponse(url="http://localhost:5173/invalidpage", status_code=302)
     except (SignatureExpired, BadSignature):
         await db_company.delete_company_by_email(email)
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        return RedirectResponse(url="http://localhost:5173/invalidpage", status_code=302)
 
 @company_main_router.get("/")
 async def get_dummy_data():
@@ -133,7 +148,7 @@ async def login(organization: User_login):
             )
             return {
                 "message": "Login successful",
-                "access_token": access_token,
+                "access_token_manager": access_token,
                 "token_type": "bearer",
                 "email": organization.email,
             }
