@@ -22,6 +22,7 @@ secret_key = config.Configurations.SECRET_KEY
 algorithm = config.Configurations.ALGORITHM
 
 user_db = DatabaseConnector("user")
+skills_db = DatabaseConnector("user-skills")
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -110,3 +111,18 @@ def serialize_dict(d: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(value, ObjectId):
             d[key] = str(value)
     return d
+
+
+
+async def save_user_profile(self, email, profile_data):
+        collection = self.db[self.collection_name]
+        await collection.update_one({"email": email}, {"$set": profile_data}, upsert=True)
+
+async def save_user_skills(self, email, skills_data):
+        collection = self.db["user-skills"]
+        await collection.update_one({"email": email}, {"$set": skills_data}, upsert=True)
+
+async def get_user_profile_by_id(self, email):
+        collection = self.db[self.collection_name]
+        return await collection.find_one({"email": email})
+
