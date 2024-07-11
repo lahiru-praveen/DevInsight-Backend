@@ -778,12 +778,12 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def delete_request(self, p_id: int, user: str, r_id:int) -> ActionResult:
+    async def delete_request(self, p_id: int, user: str, r_id: int) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             document = await self.__collection.find_one({"p_id": p_id, "user": user, "r_id": r_id})
             if document:
-                delete_result = await self.__collection.delete_one({"p_id": p_id, "user": user})
+                delete_result = await self.__collection.delete_one({"p_id": p_id, "user": user, "r_id": r_id})
                 if delete_result.deleted_count == 1:
                     document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
                     action_result.message = TextMessages.DELETE_SUCCESS
@@ -796,7 +796,7 @@ class DatabaseConnector:
         except Exception as e:
             action_result.status = False
             action_result.message = str(e)  # Capture the exact error message
-            print(f"Error deleting code: {e}")
+            print(f"Error deleting request: {e}")
         finally:
             return action_result
 

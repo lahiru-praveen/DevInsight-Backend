@@ -32,10 +32,10 @@ async def get_response(p_id: int, user: str, r_id : int):
     return result.data
 
 @retrieval_router.delete("/delete-request")
-async def delete_sub(p_id:int,user:str,r_id:int):
+async def delete_sub(p_id: int, user: str, r_id: int):
     try:
-        result1 = await request_db.delete_request(p_id,user,r_id)
-        result2 = await response_db.delete_request(p_id,user,r_id)
+        result1 = await request_db.delete_request(p_id, user, r_id)
+        result2 = await response_db.delete_request(p_id, user, r_id)
         if result1.status or result2.status:
             return {"Message1": result1.message, "Message2": result2.message}
         else:
