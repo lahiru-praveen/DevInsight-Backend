@@ -80,3 +80,5 @@ async def check_email(email: CheckEmail):
     if user_entity:
         return {"detail": "User already exists"}
     return {"detail": "Email does not exist"}
+
+

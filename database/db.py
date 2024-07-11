@@ -734,30 +734,40 @@ class DatabaseConnector:
         finally:
             return 0
 
-
-
     async def add_request(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             get_next_request_id_pipeline = [
                 {
+                    "$match": {
+                        "user": entity.user,
+                        "p_id": entity.p_id
+                    }
+                },
+                {
                     "$group": {
                         "_id": None,
-                        "next_request_id": {"$max": "$request_id"}
+                        "next_request_id": {"$max": "$r_id"}
                     }
                 },
                 {
                     "$project": {
-                        "next_request_id": {"$ifNull": [{"$add": ["$next_request_id", 1]}, 1]}
+                        "next_request_id": {
+                            "$ifNull": [
+                                {"$add": ["$next_request_id", 1]},
+                                1
+                            ]
+                        }
                     }
                 }
             ]
+
             next_id_cursor = self.__collection.aggregate(get_next_request_id_pipeline)
             next_id_doc = await next_id_cursor.to_list(length=1)
             next_request_id = next_id_doc[0]['next_request_id'] if next_id_doc else 1
 
             entity_dict = entity.dict(by_alias=True, exclude={"id"})
-            entity_dict['request_id'] = next_request_id
+            entity_dict['r_id'] = next_request_id
 
             result = await self.__collection.insert_one(entity_dict)
             action_result.data = str(result.inserted_id)
@@ -768,10 +778,47 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_all_requests(self) -> list[RequestItem]:
-        documents = self.collection.find({})
-        responses = [RequestItem(**doc) for doc in documents]
-        return responses
+    async def delete_request(self, p_id: int, user: str, r_id:int) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            document = await self.__collection.find_one({"p_id": p_id, "user": user, "r_id": r_id})
+            if document:
+                delete_result = await self.__collection.delete_one({"p_id": p_id, "user": user})
+                if delete_result.deleted_count == 1:
+                    document["deleted_at"] = datetime.utcnow()  # Add deletion timestamp
+                    action_result.message = TextMessages.DELETE_SUCCESS
+                else:
+                    action_result.status = False
+                    action_result.message = TextMessages.ACTION_FAILED
+            else:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)  # Capture the exact error message
+            print(f"Error deleting code: {e}")
+        finally:
+            return action_result
+
+    async def get_all_requests(self, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            documents = []
+            async for document in self.__collection.find({"user": user}):
+                if 'p_id' in document and document['p_id'] is not None:
+                    json_doc = json.loads(json_util.dumps(document))
+                    try:
+                        documents.append(RequestItem(**json_doc))
+                    except ValidationError as validation_error:
+                        print(f"Validation error for document {document['_id']}: {validation_error}")
+                else:
+                    print(f"Document missing required field 'p_id': {document}")
+            action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+        finally:
+            return action_result
 
     async def get_request_by_id(self, entity_id: int) -> ActionResult:
         action_result = ActionResult(status=True)
@@ -787,6 +834,23 @@ class DatabaseConnector:
         except Exception as e:
             action_result.status = False
             action_result.message = "Action failed"
+        finally:
+            return action_result
+
+    async def get_response_by_id(self, p_id: int, user:str, r_id) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            entity = await self.__collection.find_one({"p_id": p_id, "user":user, 'r_id':r_id})
+            if entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                json_data = json.loads(json_util.dumps(entity))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
 

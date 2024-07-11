@@ -55,6 +55,7 @@ class UserSkills(BaseModel):
     typescript: bool = False  
     css: bool = False  
     experienced_years: int = 0
+    experience: int = 0
     level: str = "Beginner"
        
     

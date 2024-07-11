@@ -5,15 +5,12 @@ from typing_extensions import Annotated
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
-class RequestItem(BaseModel):
+class ResponseItem(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     user : str = Field(...)
     p_id : int = Field(...)
-    p_name: str = Field(...)
     r_id : int = Field(...)
-    r_subject : str = Field(...)
-    r_content : str = Field(...)
     qae : str = Field(...)
-    r_status : str = Field(...)
+    response_content : str = Field(...)
+    feedback : int = Field(...)
     date :  str = str(date.today().strftime("%Y-%m-%d"))
-
