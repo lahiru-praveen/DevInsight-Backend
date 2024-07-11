@@ -8,7 +8,7 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 class RequestItem(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     user : str = Field(...)
-    p_id : str = Field(...)
+    p_id : int = Field(...)
     p_name: str = Field(...)
     r_id : int = Field(...)
     r_subject : str = Field(...)
