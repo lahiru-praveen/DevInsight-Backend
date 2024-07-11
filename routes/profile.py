@@ -89,6 +89,7 @@ async def login(user: User_login):
                 "access_token": access_token,
                 "token_type": "bearer",
                 "email": user.email,
+                
             }
         else:
             raise HTTPException(status_code=401, detail="Incorrect email or password")
