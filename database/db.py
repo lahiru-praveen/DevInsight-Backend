@@ -747,7 +747,7 @@ class DatabaseConnector:
                 {
                     "$group": {
                         "_id": None,
-                        "next_request_id": {"$max": "$request_id"}
+                        "next_request_id": {"$max": "$r_id"}
                     }
                 },
                 {
