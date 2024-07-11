@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Body
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
+from fastapi.security import OAuth2PasswordBearer
 from database.db import DatabaseConnector
 import os
 
@@ -11,6 +12,8 @@ profile_settings_router = APIRouter()
 user_db = DatabaseConnector("user")
 verify_db = DatabaseConnector("verify-code")
 organization_db = DatabaseConnector("company")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @profile_settings_router.put("/api/update_profile_status")

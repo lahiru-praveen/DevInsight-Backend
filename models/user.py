@@ -53,8 +53,8 @@ class UserSkills(BaseModel):
     go: bool = False  
     typeScript: bool = False  
     css: bool = False  
-    experienced_years: int = 0
-    level: str = "Starter"
+    experience: int = 0
+    level: str = "Beginner"
        
     
 

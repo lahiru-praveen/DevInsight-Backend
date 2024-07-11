@@ -1,12 +1,13 @@
 from fastapi import APIRouter,HTTPException, Depends
 from database.db import DatabaseConnector
 from models.email import CheckEmail, EmailRequest
-from models.user import User, UserProfile
+from models.user import User, UserProfile, UserSkills
 import logging
 from utilis.profile import get_current_user, oauth2_scheme, generate_otp, send_email
 
 profile_get_router = APIRouter()
 user_db = DatabaseConnector("user")
+skills_db = DatabaseConnector("user-skills")
 
 
 @profile_get_router.get("/user/{email}", response_model=User)
@@ -54,3 +55,5 @@ async def check_email(email: CheckEmail):
     if user_entity:
         return {"detail": "User already exists"}
     return {"detail": "Email does not exist"}
+
+
