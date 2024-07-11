@@ -197,6 +197,23 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    async def get_code_by_id(self, entity_id: int, user:str,p_id) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            entity = await self.__collection.find_one({"p_id": entity_id, "user":user})
+            if entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                json_data = json.loads(json_util.dumps(entity))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
     async def create_company(self, entity: CreateCompanyModel) -> ActionResult:
         from utilis.profile import hash_password
         action_result = ActionResult(status=True)
