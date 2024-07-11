@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Optional
+from typing import Optional, List
 from bson import ObjectId, json_util
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
@@ -15,6 +15,7 @@ from passlib.context import CryptContext
 from models.code_context_data import CodeContextData
 from models.company_data_1 import CreateCompanyModel
 from models.company_data_2 import CompanyModel
+from models.response_data import ResponseItem
 from models.updatecompany_data import UpdateCompanyModel
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -545,9 +546,6 @@ class DatabaseConnector:
             return action_result
 
 
-
-
-# invitation
     async def get_invitations_by_organization_email(self, organization_email: str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
@@ -853,6 +851,16 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
+
+    async def get_requests_by_qae(self, qae: str) -> List[RequestItem]:
+        requests_cursor = self.__collection.find({"qae": qae})
+        requests = await requests_cursor.to_list(length=None)
+        return [RequestItem(**request) for request in requests]
+
+    async def get_responses_by_criteria(self, user: str, p_id: int, r_id: int) -> List[ResponseItem]:
+        responses_cursor = self.__collection.find({'user': user, 'p_id': p_id, 'r_id': r_id})
+        responses = await responses_cursor.to_list(length=None)
+        return [ResponseItem(**response) for response in responses]
 
     async def get_user_by_email(self, email: str):
         from utilis.profile import serialize_dict
