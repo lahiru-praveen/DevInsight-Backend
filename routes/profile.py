@@ -74,8 +74,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def login(user: User_login):
     existing_user = await user_db.get_user_by_email(user.email)
     if existing_user:
+        if "profileStatus" in existing_user and existing_user["profileStatus"] == "Blocked":
+            raise HTTPException(status_code=403, detail="User is blocked")
         # Check if 'password' key exists in existing_user
-        if "password" in existing_user and verify_password(user.password, existing_user["password"]):
+        elif "password" in existing_user and verify_password(user.password, existing_user["password"]):
             # Update profile status to 'Active'
             await user_db.update_user_status(user)
             access_token_expires = timedelta(minutes=config.Configurations.ACCESS_TOKEN_EXPIRE_MINUTES)
