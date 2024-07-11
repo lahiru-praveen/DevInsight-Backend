@@ -21,10 +21,35 @@ async def get_user(email: str):
 async def read_profile(current_user: dict = Depends(get_current_user)):
     return current_user
 
+# @profile_get_router.post("/api/profile/{email}")
+# async def create_user_profile(email: str, profile: UserProfile, token: str = Depends(oauth2_scheme)):
+#     try:
+#         await user_db.save_user_profile(email, profile.dict())
+#         return {"message": "Profile created/updated successfully"}
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error creating/updating profile: {str(e)}")
+
 @profile_get_router.post("/api/profile/{email}")
 async def create_user_profile(email: str, profile: UserProfile, token: str = Depends(oauth2_scheme)):
     try:
+        # Save user profile data
         await user_db.save_user_profile(email, profile.dict())
+
+        # Extract skills from the profile and create a UserSkills instance
+        skills_dict = {skill.lower().replace(' ', '_'): True for skill in profile.skills} if profile.skills else {}
+        user_skills = UserSkills(
+            profileStatus=profile.profileStatus,
+            role=profile.role,
+            email=profile.email,
+            companyEmail=profile.companyEmail,
+            experienced_years=profile.experience,
+            level=profile.level,
+            **{key: value for key, value in skills_dict.items() if key in UserSkills.__fields__}
+        )
+
+        # Save user skills data
+        await skills_db.save_user_skills(email, user_skills.dict())
+
         return {"message": "Profile created/updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating/updating profile: {str(e)}")

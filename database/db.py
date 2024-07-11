@@ -908,6 +908,12 @@ class DatabaseConnector:
             {"$set": profile_data},
             upsert=True
         )
+    async def save_user_skills(self, email: str, skills_data: dict):
+        await self.__collection.update_one(
+            {"email": email},
+            {"$set": skills_data},
+            upsert=True
+        )
 
     async def get_user_profile_by_id(self, email: str):
         user = await self.__collection.find_one({"email": email}, {"_id": 0})
