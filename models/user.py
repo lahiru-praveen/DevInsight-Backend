@@ -63,5 +63,3 @@ class UserSkills(BaseModel):
 class UpdateProfileStatusRequest(BaseModel):
     email: str
     profileStatus: str
-
-
