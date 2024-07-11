@@ -13,4 +13,17 @@ class ResponseItem(BaseModel):
     qae : str = Field(...)
     response_content : str = Field(...)
     feedback : int = Field(...)
-    date :  str = str(date.today().strftime("%Y-%m-%d"))
+    date :  str = Field(...)
+    response_status : str = "Pending"
+
+class ResponseData(BaseModel):
+    p_id : int = Field(...)
+    user: str = Field(...)
+    p_name: str = Field(...)
+    req_id: int = Field(...)
+    req_date: str = Field(...)
+    req_subject: str = Field(...)
+    req_content: str = Field(...)
+    res_status: str = Field(...)
+    res_date: str = Field(...)
+    response_content: str = Field(...)

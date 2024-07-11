@@ -1,8 +1,8 @@
-# retrieval_router.py
 from fastapi import APIRouter, HTTPException
-from models.request_data import RequestItem  # Ensure you have this model defined in models/request_data.py
 from database.db import DatabaseConnector
 from typing import List
+
+from models.response_data import ResponseItem, ResponseData
 
 response_router = APIRouter()
 
@@ -10,32 +10,34 @@ request_db = DatabaseConnector("request")
 response_db = DatabaseConnector("response")
 review_db = DatabaseConnector("review")
 
-@response_router.get("/pre-responds")
-async def get_review_by_id(p_id: int, user: str):
-    result = await review_db.get_review_by_id(p_id, user)
-    if not result.status:
-        raise HTTPException(status_code=404, detail=result.message)
-    return result.data
-#
-# @retrieval_router.get("/get-response")
-# async def get_response(p_id: int, user: str, r_id : int):
-#     result = await response_db.get_response_by_id(p_id, user, r_id)
-#     if not result.status:
-#         raise HTTPException(status_code=404, detail=result.message)
-#     return result.data
+@response_router.get("/pre-responds", response_model=List[ResponseData])
+async def get_pre_responds(qae: str = None):
+    # Retrieve requests by qae value
+    requests = await request_db.get_requests_by_qae(qae)
 
-# @retrieval_router.delete("/delete-request")
-# async def delete_sub(p_id:int,user:str,r_id:int):
-#     try:
-#         result1 = await request_db.delete_request(p_id,user,r_id)
-#         result2 = await response_db.delete_request(p_id,user,r_id)
-#         if result1.status or result2.status:
-#             return {"Message1": result1.message, "Message2": result2.message}
-#         else:
-#             raise HTTPException(status_code=500, detail=[result1.message, result2.message])
-#     except Exception as e:
-#         print(f"Error in delete_sub: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
-#
-#
-#
+    if not requests:
+        raise HTTPException(status_code=404, detail="No requests found for the given QAE value")
+
+    response_data_list = []
+
+    # Iterate through each request and fetch matching responses
+    for request in requests:
+        matching_response = await response_db.get_responses_by_criteria(request.user, request.p_id, request.r_id)
+        if matching_response:
+            response = matching_response[0]  # Assuming only one matching response per request
+            response_data = ResponseData(
+                p_id=request.p_id,
+                user=request.user,
+                p_name=request.p_name,
+                req_id=request.r_id,
+                req_date=request.date,
+                req_subject=request.r_subject,
+                req_content=request.r_content,
+                res_status=response.response_status,
+                res_date=response.date,
+                response_content=response.response_content
+            )
+            response_data_list.append(response_data)
+
+    return response_data_list
+
