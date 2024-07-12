@@ -7,14 +7,14 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class ResponseItem(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    user : str = Field(...)
-    p_id : int = Field(...)
-    r_id : int = Field(...)
-    qae : str = Field(...)
-    response_content : str = Field(...)
-    feedback : int = Field(...)
-    date :  str = Field(...)
-    response_status : str = "Pending"
+    user: str
+    p_id: int
+    r_id: int
+    qae: Optional[str] = ""
+    response_content: Optional[str] = ""
+    feedback: Optional[int] = None  # This field is optional
+    date: Optional[str] = ""
+    response_status: str
 
 class ResponseData(BaseModel):
     p_id : int = Field(...)
@@ -27,3 +27,9 @@ class ResponseData(BaseModel):
     res_status: str = Field(...)
     res_date: str = Field(...)
     response_content: str = Field(...)
+
+class SendFeedback(BaseModel):
+    p_id : int = Field(...)
+    user: str = Field(...)
+    r_id: int = Field(...)
+    feedback: int = Field(...)
