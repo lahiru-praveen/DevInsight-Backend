@@ -7,6 +7,8 @@ from pydantic import BaseModel, ValidationError
 from pymongo import DESCENDING, ReturnDocument
 from pymongo.errors import ServerSelectionTimeoutError
 import motor.motor_asyncio
+from pymongo.results import DeleteResult
+
 from config import config
 from config.const_msg import TextMessages
 from database.aggregation import get_next_operator_id_pipeline
@@ -178,6 +180,23 @@ class DatabaseConnector:
             action_result.status = False
             action_result.message = str(e)  # Capture the exact error message
             print(f"Error deleting review: {e}")
+        finally:
+            return action_result
+
+    async def delete_requests_by_submission(self, entity_id: int, user: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            delete_result: DeleteResult = await self.__collection.delete_many({"p_id": entity_id, "user": user})
+
+            if delete_result.deleted_count > 0:
+                action_result.message = TextMessages.DELETE_SUCCESS
+            else:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)  # Capture the exact error message
+            print(f"Error deleting requests: {e}")
         finally:
             return action_result
 
@@ -818,10 +837,10 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_request_by_id(self, entity_id: int) -> ActionResult:
+    async def get_request_by_id(self, entity_id: int, user:str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-            entity = await self.__collection.find_one({"request_id": entity_id})
+            entity = await self.__collection.find_one({"p_id": entity_id, "user": user})
             if entity is None:
                 action_result.message = "Not found"
                 action_result.status = False
@@ -832,6 +851,48 @@ class DatabaseConnector:
         except Exception as e:
             action_result.status = False
             action_result.message = "Action failed"
+        finally:
+            return action_result
+
+
+    async def get_request_by_id_and_user(self, entity_id: int, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            documents = []
+            async for document in self.__collection.find({"p_id": entity_id, "user":user}):
+                if 'p_id' in document and document['p_id'] is not None:
+                    json_doc = json.loads(json_util.dumps(document))
+                    try:
+                        documents.append(RequestItem(**json_doc))
+                    except ValidationError as validation_error:
+                        print(f"Validation error for document {document['_id']}: {validation_error}")
+                else:
+                    print(f"Document missing required field 'p_id': {document}")
+            action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+        finally:
+            return action_result
+
+
+    async def get_response_by_id_and_user(self, entity_id: int, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            documents = []
+            async for document in self.__collection.find({"p_id": entity_id, "user":user}):
+                if 'p_id' in document and document['p_id'] is not None:
+                    json_doc = json.loads(json_util.dumps(document))
+                    try:
+                        documents.append(ResponseItem(**json_doc))
+                    except ValidationError as validation_error:
+                        print(f"Validation error for document {document['_id']}: {validation_error}")
+                else:
+                    print(f"Document missing required field 'p_id': {document}")
+            action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
         finally:
             return action_result
 
