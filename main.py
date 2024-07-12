@@ -9,6 +9,7 @@ from routes.interact_llm import llm_router
 from routes.language_checker import lan_check_router
 from routes.profile import profile_router
 from routes.profile_settings import profile_settings_router
+from routes.response_display import response_router
 from routes.submissions import submission_router
 from routes.manage_portal import manage_portal_router
 from routes.invite_main import invite_main_router
@@ -43,6 +44,8 @@ app.include_router(down_pdf_router)
 app.include_router(company_main_router)
 
 app.include_router(request_router)
+
+app.include_router(response_router)
 
 app.include_router(retrieval_router)
 
