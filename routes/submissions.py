@@ -8,6 +8,7 @@ submission_router = APIRouter()
 code_db = DatabaseConnector("code")
 review_db = DatabaseConnector("review")
 request_db = DatabaseConnector("request")
+response_db = DatabaseConnector("response")
 
 
 @submission_router.get("/pre-sub")
@@ -30,10 +31,11 @@ async def delete_sub(delete_request: DeleteRequestModel):
     try:
         result1 = await code_db.delete_code(delete_request.entity_id, delete_request.user)
         result2 = await review_db.delete_review(delete_request.entity_id, delete_request.user)
+        result3 = await request_db.delete_requests_by_submission(delete_request.entity_id, delete_request.user)
         if result1.status or result2.status:
-            return {"Message1": result1.message, "Message2": result2.message}
+            return {"Message1": result1.message, "Message2": result2.message, "Message3": result3.message}
         else:
-            raise HTTPException(status_code=500, detail=[result1.message, result2.message])
+            raise HTTPException(status_code=500, detail=[result1.message, result2.message, result3.message])
     except Exception as e:
         print(f"Error in delete_sub: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -61,13 +63,28 @@ async def get_review(project_id: int, user: str):
         raise HTTPException(status_code=404, detail=result.message)
     return result.data
 
-@submission_router.get("/get-request-id/{project_id}")
-async def get_request_by_id(project_id: int):
-    result = await request_db.get_request_by_id(project_id)
+@submission_router.get("/get-request/{project_id}")
+async def get_request_by_user_id(project_id: int, user: str):
+    result = await request_db.get_request_by_id_and_user(project_id,user)
     if not result.status:
         raise HTTPException(status_code=404, detail=result.message)
-    req_id = result.data.get("req_id", None)
-    return {"req_id": req_id}
+    return result.data
+
+@submission_router.get("/get-response-by-p_id/{project_id}")
+async def get_response_by_user_id(project_id: int, user: str):
+    result = await response_db.get_response_by_id_and_user(project_id,user)
+    print(result.data)
+    if not result.status:
+        raise HTTPException(status_code=404, detail=result.message)
+    return result.data
+
+@submission_router.get("/get-request-id/{project_id}")
+async def get_request_by_id(project_id: int, user: str):
+    result = await request_db.get_request_by_id(project_id,user)
+    if not result.status:
+        raise HTTPException(status_code=404, detail=result.message)
+    req_id = result.data.get("r_id", None)
+    return {"r_id": req_id}
 
 
 @submission_router.get("/project-names")
