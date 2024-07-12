@@ -57,8 +57,11 @@ class UserSkills(BaseModel):
     experienced_years: int = 0
     experience: int = 0
     level: str = "Beginner"
-       
-    
+    avgfeedback: Optional[int] = None
+
+class FeedBackAverage(BaseModel):
+    email: str
+    avgfeedback: Optional[int] = None
 
 class UpdateProfileStatusRequest(BaseModel):
     email: str
