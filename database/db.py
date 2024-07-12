@@ -1,12 +1,14 @@
 import datetime
 import json
-from typing import Optional
+from typing import Optional, List
 from bson import ObjectId, json_util
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 from pymongo import DESCENDING, ReturnDocument
 from pymongo.errors import ServerSelectionTimeoutError
 import motor.motor_asyncio
+from pymongo.results import DeleteResult
+
 from config import config
 from config.const_msg import TextMessages
 from database.aggregation import get_next_operator_id_pipeline
@@ -15,6 +17,7 @@ from passlib.context import CryptContext
 from models.code_context_data import CodeContextData
 from models.company_data_1 import CreateCompanyModel
 from models.company_data_2 import CompanyModel
+from models.response_data import ResponseItem
 from models.updatecompany_data import UpdateCompanyModel
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -23,8 +26,7 @@ from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime
 from models.member import MemberModel
 from models.request_data import RequestItem
-
-
+from models.response_data import ResponseItem,SendFeedback
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
@@ -180,7 +182,41 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    async def delete_requests_by_submission(self, entity_id: int, user: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            delete_result: DeleteResult = await self.__collection.delete_many({"p_id": entity_id, "user": user})
+
+            if delete_result.deleted_count > 0:
+                action_result.message = TextMessages.DELETE_SUCCESS
+            else:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)  # Capture the exact error message
+            print(f"Error deleting requests: {e}")
+        finally:
+            return action_result
+
     async def get_review_by_id(self, entity_id: int, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            entity = await self.__collection.find_one({"p_id": entity_id, "user":user})
+            if entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                json_data = json.loads(json_util.dumps(entity))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
+    async def get_code_by_id(self, entity_id: int, user:str,p_id) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             entity = await self.__collection.find_one({"p_id": entity_id, "user":user})
@@ -545,9 +581,6 @@ class DatabaseConnector:
             return action_result
 
 
-
-
-# invitation
     async def get_invitations_by_organization_email(self, organization_email: str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
@@ -778,6 +811,41 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    async def get_latest_r_id(self, user: str, p_id: Optional[str] = None) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            query = {"user": user}
+            if p_id is not None:
+                query["p_id"] = p_id
+
+            # Assuming your collection has a field indicating insertion order or using the default _id
+            latest_entity = await self.__collection.find_one(query, sort=[("r_id", DESCENDING)])
+            if latest_entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+            else:
+                action_result.data = latest_entity.get("r_id")
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
+
+    async def add_response(self, entity: BaseModel) -> ActionResult:
+            action_result = ActionResult(status=True)
+            try:
+                entity_dict = entity.dict(by_alias=True, exclude={"id"})
+                result = await self.__collection.insert_one(entity_dict)
+                action_result.data = str(result.inserted_id)
+                action_result.message = "Insert successful"
+            except Exception as e:
+                action_result.status = False
+                action_result.message = str(e)
+            finally:
+                return action_result
+
     async def delete_request(self, p_id: int, user: str, r_id: int) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
@@ -820,10 +888,10 @@ class DatabaseConnector:
         finally:
             return action_result
 
-    async def get_request_by_id(self, entity_id: int) -> ActionResult:
+    async def get_request_by_id(self, entity_id: int, user:str) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
-            entity = await self.__collection.find_one({"request_id": entity_id})
+            entity = await self.__collection.find_one({"p_id": entity_id, "user": user})
             if entity is None:
                 action_result.message = "Not found"
                 action_result.status = False
@@ -834,6 +902,48 @@ class DatabaseConnector:
         except Exception as e:
             action_result.status = False
             action_result.message = "Action failed"
+        finally:
+            return action_result
+
+
+    async def get_request_by_id_and_user(self, entity_id: int, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            documents = []
+            async for document in self.__collection.find({"p_id": entity_id, "user":user}):
+                if 'p_id' in document and document['p_id'] is not None:
+                    json_doc = json.loads(json_util.dumps(document))
+                    try:
+                        documents.append(RequestItem(**json_doc))
+                    except ValidationError as validation_error:
+                        print(f"Validation error for document {document['_id']}: {validation_error}")
+                else:
+                    print(f"Document missing required field 'p_id': {document}")
+            action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+        finally:
+            return action_result
+
+
+    async def get_response_by_id_and_user(self, entity_id: int, user:str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            documents = []
+            async for document in self.__collection.find({"p_id": entity_id, "user":user}):
+                if 'p_id' in document and document['p_id'] is not None:
+                    json_doc = json.loads(json_util.dumps(document))
+                    try:
+                        documents.append(ResponseItem(**json_doc))
+                    except ValidationError as validation_error:
+                        print(f"Validation error for document {document['_id']}: {validation_error}")
+                else:
+                    print(f"Document missing required field 'p_id': {document}")
+            action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
         finally:
             return action_result
 
@@ -853,6 +963,16 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
+
+    async def get_requests_by_qae(self, qae: str) -> List[RequestItem]:
+        requests_cursor = self.__collection.find({"qae": qae})
+        requests = await requests_cursor.to_list(length=None)
+        return [RequestItem(**request) for request in requests]
+
+    async def get_responses_by_criteria(self, user: str, p_id: int, r_id: int) -> List[ResponseItem]:
+        responses_cursor = self.__collection.find({'user': user, 'p_id': p_id, 'r_id': r_id})
+        responses = await responses_cursor.to_list(length=None)
+        return [ResponseItem(**response) for response in responses]
 
     async def get_user_by_email(self, email: str):
         from utilis.profile import serialize_dict
@@ -947,3 +1067,22 @@ class DatabaseConnector:
 
     async def login_face(self):
         return await self.__collection.find().to_list(length=None)
+
+    async def update_feedback(self, feedback_request: SendFeedback) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            query = {"p_id": feedback_request.p_id, "r_id": feedback_request.r_id, "user": feedback_request.user}
+            update = {"$set": {"feedback": feedback_request.feedback}}
+            result = await self.__collection.update_one(query, update)
+
+            if result.matched_count == 0:
+                action_result.status = False
+                action_result.message = "Request not found"
+            else:
+                action_result.message = "Feedback submitted successfully"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+
+        return action_result
+

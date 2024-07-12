@@ -18,7 +18,7 @@ class CodeReviewByGemini:
         previous_answer = ""
 
         # Initialize the compilation
-        review_final = "This is the review: \n"
+        review_final = ""
 
         # Process each chunk
         for chunk in chunk_input:
@@ -30,7 +30,7 @@ class CodeReviewByGemini:
         review = review_final
 
         # Initialize the compilation
-        suggest_final = "These are the suggestions: \n"
+        suggest_final = ""
 
         for chunk in chunk_input:
             cohesive_prompt = create_cohesive_prompt(chunk, main_language, project_description)
@@ -40,7 +40,7 @@ class CodeReviewByGemini:
 
         suggestions = suggest_final
 
-        refer_links_final = "These are the Reference Links: \n"
+        refer_links_final = ""
 
         for chunk in chunk_input:
             cohesive_prompt = create_cohesive_prompt(chunk, main_language, project_description)
