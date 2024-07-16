@@ -4,6 +4,7 @@ from models.request_data import RequestItem  # Ensure you have this model define
 from database.db import DatabaseConnector
 from typing import List
 from models.response_data import ResponseItem,SendFeedback
+
 retrieval_router = APIRouter()
 
 request_db = DatabaseConnector("request")
@@ -61,6 +62,7 @@ async def update_feedback(feedback_request: SendFeedback):
     if not result.status:
         raise HTTPException(status_code=404, detail=result.message)
     return {"message": result.message}
+
 
 async def calculate_and_update_avg_feedback(qae: str):
     try:

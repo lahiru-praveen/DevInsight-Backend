@@ -17,3 +17,14 @@ class RequestItem(BaseModel):
     r_status : str = Field(...)
     date :  str = str(date.today().strftime("%Y-%m-%d"))
 
+class AssignItem(BaseModel):
+    user : str = Field(...)
+    p_id : int = Field(...)
+    r_id : int = Field(...)
+    qae : str = Field(...)
+
+class UpdateRequestStatus(BaseModel):
+    p_id: int
+    r_id: int
+    user: str
+    r_status: str
