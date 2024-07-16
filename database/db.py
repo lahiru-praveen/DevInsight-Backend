@@ -26,7 +26,9 @@ from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime
 from models.member import MemberModel
 from models.request_data import RequestItem
-from models.response_data import ResponseItem,SendFeedback
+from models.response_data import ResponseItem,SendFeedback,UpdateResponseRequest
+from models.request_data import AssignItem, UpdateRequestStatus  # Ensure you have this model defined in models/request_data.py
+
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
@@ -1080,6 +1082,82 @@ class DatabaseConnector:
                 action_result.message = "Request not found"
             else:
                 action_result.message = "Feedback submitted successfully"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+
+        return action_result
+
+    async def update_qae(self, assign_request: AssignItem) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            query = {"p_id": assign_request.p_id, "r_id": assign_request.r_id, "user": assign_request.user}
+            update = {"$set": {"qae": assign_request.qae}}
+            result = await self.__collection.update_one(query, update)
+
+            if result.matched_count == 0:
+                action_result.status = False
+                action_result.message = "Request not found"
+            else:
+                action_result.message = "Feedback submitted successfully"
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+
+        return action_result
+
+    async def update_response(self, response_request: UpdateResponseRequest) -> ActionResult:
+        action_result = ActionResult(status=True, message="")
+
+        try:
+            query = {
+                "p_id": response_request.p_id,
+                "r_id": response_request.r_id,
+                "user": response_request.user
+            }
+            update = {
+                "$set": {
+                    "response_content": response_request.response_content,
+                    "response_status": "Responded",
+                    "date": datetime.now().strftime('%Y-%m-%d')  # Format date as 'YYYY-MM-DD'
+                }
+            }
+            result: UpdateResult = await self.__collection.update_one(query, update)
+
+            if result.matched_count == 0:
+                action_result.status = False
+                action_result.message = "Response not found"
+            else:
+                action_result.message = "Response updated successfully"
+
+        except Exception as e:
+            action_result.status = False
+            action_result.message = str(e)
+
+        return action_result
+
+    async def update_request_status(self, request_status: UpdateRequestStatus) -> ActionResult:
+        action_result = ActionResult(status=True, message="")
+
+        try:
+            query = {
+                "p_id": request_status.p_id,
+                "r_id": request_status.r_id,
+                "user": request_status.user
+            }
+            update = {
+                "$set": {
+                    "r_status": request_status.r_status
+                }
+            }
+            result: UpdateResult = await self.__collection.update_one(query, update)
+
+            if result.matched_count == 0:
+                action_result.status = False
+                action_result.message = "Request not found"
+            else:
+                action_result.message = "Request status updated to Completed"
+
         except Exception as e:
             action_result.status = False
             action_result.message = str(e)

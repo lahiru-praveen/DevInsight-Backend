@@ -27,9 +27,17 @@ class ResponseData(BaseModel):
     res_status: str = Field(...)
     res_date: str = Field(...)
     response_content: str = Field(...)
+    qae: Optional[str] = ""
 
 class SendFeedback(BaseModel):
     p_id : int = Field(...)
     user: str = Field(...)
     r_id: int = Field(...)
     feedback: int = Field(...)
+
+class UpdateResponseRequest(BaseModel):
+    p_id: int
+    user: str
+    r_id: int
+    response_content: str
+
