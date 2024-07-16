@@ -33,4 +33,4 @@ class QAEModel:
         return new_qaes['email'].iloc[top_qae_index]
 
 # Initialize the model (assumes the CSV file is at the specified path)
-qae_model = QAEModel('D:/try/qae_dummy_data.csv')
+qae_model = QAEModel('C:/Users/Asus/Documents/GitHub/DevInsight-Backend/assets/qae_dummy_data.csv')
