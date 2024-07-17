@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models.request_data import RequestItem, AssignItem, AssignForwardItem  # Ensure this model is defined in models/request_data.py
+from models.request_data import RequestItem, AssignItem  # Ensure this model is defined in models/request_data.py
 from models.action_result import ActionResult
 from models.response_data import ResponseItem
 from database.db import DatabaseConnector  # Ensure these are correctly implemented
@@ -63,9 +63,3 @@ async def request(request_item: RequestItem):
         print(f"Error in save_response: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while saving the response")
 
-@request_router.post("/forward-request", response_model=ActionResult)
-async def forward_request(assign_request: AssignForwardItem):
-    result = await update_forwardqae(assign_request)
-    if not result.status:
-        raise HTTPException(status_code=404, detail=result.message)
-    return result
