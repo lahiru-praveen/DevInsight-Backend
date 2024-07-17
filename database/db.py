@@ -308,25 +308,73 @@ class DatabaseConnector:
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Email Verification</title>
+            <title>Password Reset Notification</title>
             <style>
                 body {{
                     font-family: Arial, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
+                    background-color: #f6f6f6;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-text-size-adjust: 100%;
+                    -ms-text-size-adjust: 100%;
+                }}
+                .email-container {{
                     max-width: 600px;
                     margin: 0 auto;
                     padding: 20px;
-                    background-color: #f4f4f4;
-                }}
-                .container {{
                     background-color: #ffffff;
-                    padding: 30px;
-                    border-radius: 5px;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                 }}
-                h1 {{
-                    color: #0077be;
+                .header {{
+                    text-align: center;
+                    padding: 20px 0;
+                    background-color:#0077be;
+                    color: #ffffff;
+                    border-top-left-radius: 8px;
+                    border-top-right-radius: 8px;
+                }}
+                .header img {{
+                    width: 150px;
+                    height: auto;
+                }}
+                .header h1 {{
+                    margin: 10px 0 0;
+                    font-size: 24px;
+                }}
+                .content {{
+                    padding: 20px;
+                    text-align: center;
+                }}
+                .content h2 {{
+                    font-size: 20px;
+                    margin-bottom: 20px;
+                    color: #333333;
+                }}
+                .content p {{
+                    font-size: 16px;
+                    margin-bottom: 20px;
+                    color: #666666;
+                }}
+                .reset-password {{
+                    display: inline-block;
+                    font-size: 20px;
+                    font-weight: bold;
+                    background-color: #eeeeee;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    color: #393970;
+                    letter-spacing: 2px;
+                }}
+                .footer {{
+                    text-align: center;
+                    padding: 20px;
+                    font-size: 12px;
+                    color: #999999;
+                    background-color: #f6f6f6;
+                    border-bottom-left-radius: 8px;
+                    border-bottom-right-radius: 8px;
+
                 }}
                 .button {{
                     display: inline-block;
@@ -337,27 +385,28 @@ class DatabaseConnector:
                     border-radius: 5px;
                     margin-top: 20px;
                 }}
-                .footer {{
-                    margin-top: 30px;
-                    text-align: center;
-                    font-size: 0.9em;
-                    color: #666;
-                }}
             </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>Verify Your Email</h1>
+            </head>
+            <body>
+
+             <div class="email-container">
+            <div class="header">
+                
+                <h1>DevInsight</h1>
+            </div>
+            <div class="content">
+                <h2>Verify Your Email</h2>
                 <p>Hello,</p>
                 <p>Thank you for signing up. Please click the button below to verify your email address:</p>
                 <a href="{verification_url}" class="button">Verify Email</a>
                 <p>If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
-                <p>{verification_url}</p>
-                <p>Thank you,<br>Your Company Team</p>
+                        <p>{verification_url}</p>
             </div>
             <div class="footer">
-                <p>This email was sent by Your Company. Please do not reply to this email.</p>
+                &copy; 2024 DevInsight. All rights reserved.<br>
             </div>
+        </div>
+
         </body>
         </html>
         """
@@ -475,7 +524,7 @@ class DatabaseConnector:
             # Determine the new profile status based on the action
             new_status: Optional[str] = None
             if action == 'block':
-                new_status = 'Suspend'
+                new_status = 'Blocked'
             elif action == 'unblock':
                 new_status = 'Active'
             else:
@@ -542,16 +591,115 @@ class DatabaseConnector:
         message['To'] = receiver_email
         message['Subject'] = 'Role changed'
 
-        body = f"""
-        Hello,
+        html_body = f"""
+       <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Password Reset Notification</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f6f6f6;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-text-size-adjust: 100%;
+                    -ms-text-size-adjust: 100%;
+                }}
+                .email-container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: #ffffff;
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                }}
+                .header {{
+                    text-align: center;
+                    padding: 20px 0;
+                    background-color:#0077be;
+                    color: #ffffff;
+                    border-top-left-radius: 8px;
+                    border-top-right-radius: 8px;
+                }}
+                .header img {{
+                    width: 150px;
+                    height: auto;
+                }}
+                .header h1 {{
+                    margin: 10px 0 0;
+                    font-size: 24px;
+                }}
+                .content {{
+                    padding: 20px;
+                    text-align: center;
+                }}
+                .content h2 {{
+                    font-size: 20px;
+                    margin-bottom: 20px;
+                    color: #333333;
+                }}
+                .content p {{
+                    font-size: 16px;
+                    margin-bottom: 20px;
+                    color: #666666;
+                }}
+                .reset-password {{
+                    display: inline-block;
+                    font-size: 20px;
+                    font-weight: bold;
+                    background-color: #eeeeee;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    color: #393970;
+                    letter-spacing: 2px;
+                }}
+                .footer {{
+                    text-align: center;
+                    padding: 20px;
+                    font-size: 12px;
+                    color: #999999;
+                    background-color: #f6f6f6;
+                    border-bottom-left-radius: 8px;
+                    border-bottom-right-radius: 8px;
 
-        Hello {username} Your active role have been change to {new_role}.
-        
+                }}
+                .button {{
+                    display: inline-block;
+                    padding: 10px 20px;
+                    background-color: #0077be;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin-top: 20px;
+                }}
+            </style>
+        </head>
+        <body>
 
-        Thank you,
-        Devinsight Team
+        <div class="email-container">
+            <div class="header">
+                
+                <h1>DevInsight</h1>
+            </div>
+            <div class="content">
+                <h2>Role Changed</h2>
+                <p>Hello,</p>
+                <p>Hello {username} Your active role have been change to {new_role}</p>
+            
+                <p> Thank you,</p>
+                        
+            </div>
+            <div class="footer">
+                &copy; 2024 DevInsight. All rights reserved.<br>
+            </div>
+        </div>
+
+        </body>
+        </html>
         """
-        message.attach(MIMEText(body, 'plain'))
+        message.attach(MIMEText(html_body, 'html'))
 
         try:
             with smtplib.SMTP(smtp_server, smtp_port) as server:
@@ -680,7 +828,7 @@ class DatabaseConnector:
                 verification_token = invite["verification_token"]
 
                 # Resend the verification email
-                await self.send_verification_email(user_email, verification_token)
+                await self.send_invitation_email(user_email, verification_token)
 
                 action_result.message = "Invite resent successfully"
             else:
@@ -747,16 +895,115 @@ class DatabaseConnector:
         message['To'] = receiver_email
         message['Subject'] = 'Verify Your Email'
 
-        body = f"""
-        Hello,
+        html_body = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Password Reset Notification</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f6f6f6;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-text-size-adjust: 100%;
+                    -ms-text-size-adjust: 100%;
+                }}
+                .email-container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: #ffffff;
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                }}
+                .header {{
+                    text-align: center;
+                    padding: 20px 0;
+                    background-color:#0077be;
+                    color: #ffffff;
+                    border-top-left-radius: 8px;
+                    border-top-right-radius: 8px;
+                }}
+                .header img {{
+                    width: 150px;
+                    height: auto;
+                }}
+                .header h1 {{
+                    margin: 10px 0 0;
+                    font-size: 24px;
+                }}
+                .content {{
+                    padding: 20px;
+                    text-align: center;
+                }}
+                .content h2 {{
+                    font-size: 20px;
+                    margin-bottom: 20px;
+                    color: #333333;
+                }}
+                .content p {{
+                    font-size: 16px;
+                    margin-bottom: 20px;
+                    color: #666666;
+                }}
+                .reset-password {{
+                    display: inline-block;
+                    font-size: 20px;
+                    font-weight: bold;
+                    background-color: #eeeeee;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    color: #393970;
+                    letter-spacing: 2px;
+                }}
+                .footer {{
+                    text-align: center;
+                    padding: 20px;
+                    font-size: 12px;
+                    color: #999999;
+                    background-color: #f6f6f6;
+                    border-bottom-left-radius: 8px;
+                    border-bottom-right-radius: 8px;
 
-        Please click the following link to verify your email:
-        {verification_url}
+                }}
+                .button {{
+                    display: inline-block;
+                    padding: 10px 20px;
+                    background-color: #0077be;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin-top: 20px;
+                }}
+            </style>
+            </head>
+        <body>
 
-        Thank you,
-        Your Company Team
+        <div class="email-container">
+            <div class="header">
+                
+                <h1>DevInsight</h1>
+            </div>
+            <div class="content">
+                <h2>Invitation to Join</h2>
+                <p>Hello,</p>
+                <p>You have a invitation to join DevInsight. Please click the button below to verify your email address:</p>
+                <a href="{verification_url}" class="button">Verify Email</a>
+                <p>If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
+                        <p>{verification_url}</p>
+            </div>
+            <div class="footer">
+                &copy; 2024 DevInsight. All rights reserved.<br>
+            </div>
+        </div>
+
+        </body>
+        </html>
         """
-        message.attach(MIMEText(body, 'plain'))
+        message.attach(MIMEText(html_body, 'html'))
 
         try:
             with smtplib.SMTP(smtp_server, smtp_port) as server:
