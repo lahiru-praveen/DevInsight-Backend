@@ -23,12 +23,6 @@ class AssignItem(BaseModel):
     r_id : int = Field(...)
     qae : str = Field(...)
 
-class AssignForwardItem(BaseModel):
-    user : str = Field(...)
-    p_id : int = Field(...)
-    r_id : int = Field(...)
-    qae : str = Field(...)
-
 class UpdateRequestStatus(BaseModel):
     p_id: int
     r_id: int

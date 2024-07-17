@@ -27,7 +27,7 @@ from datetime import datetime
 from models.member import MemberModel
 from models.request_data import RequestItem
 from models.response_data import ResponseItem,SendFeedback,UpdateResponseRequest
-from models.request_data import AssignItem, UpdateRequestStatus, AssignForwardItem  # Ensure you have this model defined in models/request_data.py
+from models.request_data import AssignItem, UpdateRequestStatus  # Ensure you have this model defined in models/request_data.py
 
 
 class DatabaseConnector:
@@ -1340,24 +1340,6 @@ class DatabaseConnector:
         try:
             query = {"p_id": assign_request.p_id, "r_id": assign_request.r_id, "user": assign_request.user}
             update = {"$set": {"qae": assign_request.qae}}
-            result = await self.__collection.update_one(query, update)
-
-            if result.matched_count == 0:
-                action_result.status = False
-                action_result.message = "Request not found"
-            else:
-                action_result.message = "Feedback submitted successfully"
-        except Exception as e:
-            action_result.status = False
-            action_result.message = str(e)
-
-        return action_result
-
-    async def update_forwardqae(self, assign_forward: AssignForwardItem) -> ActionResult:
-        action_result = ActionResult(status=True)
-        try:
-            query = {"p_id": assign_forward.p_id, "r_id": assign_forward.r_id, "user": assign_forward.user}
-            update = {"$set": {"qae": assign_forward.selectedName}}
             result = await self.__collection.update_one(query, update)
 
             if result.matched_count == 0:
