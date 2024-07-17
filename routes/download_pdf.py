@@ -31,68 +31,54 @@ async def generate_pdf(request: Request):
     html_content = f"""
     <!DOCTYPE html>
     <html>
-        <head>
-            <title>{project_name}-Code Review</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    margin: 20px;
-                    border: 3px solid #ddd; 
-                    padding: 20px; 
-                }}
-                h1, h2 {{
-                    color: #333;
-                }}
-                pre {{
-                    background: #f4f4f4;
-                    padding: 10px;
-                    border: 1px solid #ddd;
-                    border-radius: 5px;
-                    font-size: 16px; /* Increase font size to 16px */
-                }}
-            </style>
-        </head>
-        <body>
-            <p>
-                <h2>Project Name - </h2>
-                <pre>{project_name}</pre>
-            </p>
-            
-            <p>
-                <h2>File Name - </h2>
-                <pre>{file_name}</pre>
-            </p>
-            
-            <p>
-                <h2>Language - </h2>
-                <pre>{language}</pre>
-            </p>
-            
-            <p>
-                <h2>Description - </h2>
-                <pre>{description}</pre>
-            </p>
-            
-            <p>
-                <h1>Review</h1>
-                <pre>{review_content}</pre>
-            </p>
-            
-            <p>
-                <h1>Suggestions</h1>
-                <pre>{suggestion_content}</pre>
-            </p>
-            
-            <p>
-                <h1>Refer Links</h1>
-                <pre>{refer_links_content}</pre>
-            </p>
-            
-            <p>
-                <h1>Code</h1>
-                <pre>{code}</pre>
-            </p>
-        </body>
+    <head>
+        <title>{project_name}-Code Review</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                border: 3px solid #ddd;
+                padding: 20px;
+            }}
+            h1, h2 {{
+                color: #333;
+            }}
+            pre {{
+                background: #f4f4f4;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 16px; /* Increase font size to 16px */
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>{project_name} - Code Review</h1>
+
+        <h2>Project Name</h2>
+        <pre>{project_name}</pre>
+
+        <h2>File Name</h2>
+        <pre>{file_name}</pre>
+
+        <h2>Language</h2>
+        <pre>{language}</pre>
+
+        <h1>Code</h1>
+        <pre><code>{code}</code></pre>
+
+        <h2>Description</h2>
+        <pre>{description}</pre>
+
+        <h1>Review</h1>
+        <pre>{review_content}</pre>
+
+        <h1>Suggestions</h1>
+        <pre>{suggestion_content}</pre>
+
+        <h1>Refer Links</h1>
+        <pre>{refer_links_content}</pre>
+    </body>
     </html>
     """
 
