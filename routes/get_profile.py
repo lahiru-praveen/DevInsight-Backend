@@ -74,9 +74,10 @@ async def send_email_endpoint(email_request: EmailRequest):
         logging.error(f"Error in send_email_endpoint: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     
+
 @profile_get_router.post("/api/check-email", response_model=dict)
 async def check_email(email: CheckEmail):
     user_entity = await user_db.get_user_by_email(email.email)
     if user_entity:
-        return {"detail": "User already exists"}
-    return {"detail": "Email does not exist"}
+        return {"exists": True}
+    return {"exists": False}

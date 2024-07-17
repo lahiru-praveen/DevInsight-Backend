@@ -81,7 +81,9 @@ async def login_face(file: UploadFile = File(...)):
                             "access_token": access_token,
                             # "token_type": "bearer",
                             "email": user["email"],
-                            "password": user["password"] 
+                            "password": user["password"], 
+                            "role": user["role"], 
+                            "companyEmail": user["companyEmail"] 
                 }
                 return JSONResponse(content={"message": "Login successful", "user": user_data})
 

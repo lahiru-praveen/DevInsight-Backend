@@ -1,3 +1,5 @@
+from typing import List
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Query, Depends, Body,UploadFile, File, Form
 from passlib.context import CryptContext
 from database.db import DatabaseConnector
@@ -15,7 +17,6 @@ from fastapi.staticfiles import StaticFiles
 from datetime import timedelta
 import os
 from fastapi.responses import JSONResponse, RedirectResponse
-
 from models.user import User_login
 from utilis.profile import verify_password, create_access_token
 
